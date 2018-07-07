@@ -244,31 +244,48 @@ router.post('/verify', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  pool.query(`SELECT * FROM employee WHERE username = $1`, [req.body.username], (errorfromquery, findusername) => {
-    if(findusername.rows.length < 1)
-      return res.send({ message: 'Unauthorized'});
-    bcrypt.compare(req.body.password, findusername.rows[0].password, function(err, result) {
+  pool.query(`SELECT * FROM accounts WHERE employeeid = $1`, [req.body.employeeId], (errAccounts, resAccounts) => {
+    if(resAccounts.rows.length < 1) {
+      return res.send({
+        status: 401,
+        message: 'Invalid Employee ID or password.',
+        from: `/login/`,
+      });
+    }
+
+    bcrypt.compare(req.body.password, resAccounts.rows[0].password, function(err, result) {
       if(result) {
-        const token = jwt.sign(
-          {
-            id: findusername.rows[0].employeeid
-          },
-          process.env.JWT_KEY,
-          {
-            expiresIn: '3h'
-          }
-        );
-        return res.status(200).send({
-          message: "Successfully logged in.",
-          token,
-          employeeid: findusername.rows[0].employeeid,
-          jobid: findusername.rows[0].jobid,
-          name: findusername.rows[0].personaldatasheet.personalInformation.firstName + ' ' + findusername.rows[0].personaldatasheet.personalInformation.surname
+        pool.query('SELECT firstname, middlename, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
+
+          const token = jwt.sign(
+            {
+              mode: 4,
+              employeeId: resAccounts.rows[0].employeeid,
+              email: resAccounts.rows[0].email,
+              firstName: resEmployees.rows[0].firstname,
+              middleInitial: resEmployees.rows[0].middlename.charAt(0),
+              lastName: resEmployees.rows[0].lastname,
+            },
+            process.env.JWT_KEY,
+            {
+              expiresIn: '1h'
+            }
+          );
+
+          res.send({
+            status: 200,
+            message: 'Successfully logged in.',
+            from: `/login`,
+            token
+          })
+        })
+      } else {
+        return res.send({
+          status: 401,
+          message: 'Invalid Employee ID or password.',
+          from: `/login`,
         })
       }
-      res.send({
-        message: 'Unauthorized'
-      });
     });
   })
 });
