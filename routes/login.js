@@ -244,27 +244,48 @@ router.post('/verify', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  pool.query(`SELECT * FROM accounts WHERE employeeid = $1`, [req.body.employeeId], (errAccounts, resAccounts) => {
+  pool.query('SELECT * FROM accounts WHERE employeeid = $1', [req.body.employeeId], (errAccounts, resAccounts) => {
     if(resAccounts.rows.length < 1) {
-      return res.send({
-        status: 401,
-        message: 'Invalid Employee ID or password.',
-        from: `/login/`,
+      pool.query('SELECT employeeid FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
+        if(resEmployees.rows.length < 1) {
+          res.send({
+            status: 401,
+            message: 'Invalid Employee ID or password.',
+            from: `/login/`,
+          });
+        } else {
+          res.send({
+            status: 403,
+            message: 'Employee ID is not yet registered.',
+            employeeId: req.body.employeeId,
+            from: `/login/`,
+          });
+        }
       });
+
+      return 0;
     }
 
     bcrypt.compare(req.body.password, resAccounts.rows[0].password, function(err, result) {
       if(result) {
         pool.query('SELECT firstname, middlename, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
+          let mode;
+
+          if(resAccounts.rows[0].roleid === 1) {
+            mode = 5
+          } else {
+            mode = 4
+          }
 
           const token = jwt.sign(
             {
-              mode: 4,
+              mode,
               employeeId: resAccounts.rows[0].employeeid,
               email: resAccounts.rows[0].email,
               firstName: resEmployees.rows[0].firstname,
               middleInitial: resEmployees.rows[0].middlename.charAt(0),
               lastName: resEmployees.rows[0].lastname,
+              role: resAccounts.rows[0].roleid,
             },
             process.env.JWT_KEY,
             {
