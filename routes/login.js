@@ -15,11 +15,6 @@ const pool = new Pool();
 // mode 2 - completeRegistration
 // mode 3 - login
 
-let registration = {
-  employeeId: false,
-  email: false,
-};
-
 let user = {
   firstName: null,
   lastName: null
@@ -39,14 +34,12 @@ router.post('/register', (req, res) => {
                   console.log(errQ)
                 } else {
                   if(resQS.rowCount > 0) {
-                    registration.employeeId = false;
                     res.send({
                       status: 409,
                       from: `/login/register`,
                       validationMessage: 'Employee ID is already registered'
                     })
                   } else {
-                    registration.employeeId = true;
                     pool.query('SELECT firstname, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errQT, resQT) => {
                       if(errQT) {
                         console.log(errQT)
@@ -65,7 +58,6 @@ router.post('/register', (req, res) => {
                 }
               });
             } else {
-              registration.employeeId = false;
               res.send({
                 status: 404,
                 from: `/login/register`,
@@ -88,14 +80,12 @@ router.post('/register', (req, res) => {
           console.log(errQ)
         } else {
           if(resQ.rowCount > 0) {
-            registration.email = false;
             res.send({
               status: 409,
               from: `/login/register`,
               validationMessage: 'This e-mail address is already used'
             })
           } else {
-            registration.email = true;
             res.send({
               status: 200,
               from: `/login/register`,
@@ -108,15 +98,6 @@ router.post('/register', (req, res) => {
     }
 
     case 3: {
-      if(!registration.employeeId && !registration.email) {
-        return res.send({
-          status: 500,
-          from: `/login/register`,
-          message: 'Something went wrong.',
-          registration
-        })
-      }
-
       const token = randtoken.generate(30);
 
       const transporter = nodemailer.createTransport({
@@ -128,7 +109,7 @@ router.post('/register', (req, res) => {
       });
 
       const mailOptions = {
-        from: 'Promotion Management System <promotionmanagementsystem@gmail.com>',
+        from: 'promotionmanagementsystem@gmail.com',
         to: req.body.email,
         subject: 'Verify your account',
         html: verificationEmail(user.firstName, token)
@@ -214,7 +195,7 @@ router.post('/register', (req, res) => {
 
                     const token = jwt.sign({
                       mode: 2,
-                      employeeid: req.body.employeeId,
+                      employeeId: req.body.employeeId,
                       email: req.body.email,
                       firstName: user.firstName,
                       lastName: user.lastName
@@ -269,36 +250,84 @@ router.post('/', (req, res) => {
     bcrypt.compare(req.body.password, resAccounts.rows[0].password, function(err, result) {
       if(result) {
         pool.query('SELECT firstname, middlename, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
-          let mode;
-
           if(resAccounts.rows[0].roleid === 1) {
-            mode = 5
+            const token1 = jwt.sign({
+                mode: 5,
+                employeeId: resAccounts.rows[0].employeeid,
+                email: resAccounts.rows[0].email,
+                firstName: resEmployees.rows[0].firstname,
+                middleInitial: resEmployees.rows[0].middlename.charAt(0) + '.',
+                lastName: resEmployees.rows[0].lastname,
+                role: resAccounts.rows[0].roleid,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: '1h'
+              });
+
+            const token2 = jwt.sign({
+                mode: 4,
+                employeeId: resAccounts.rows[0].employeeid,
+                email: resAccounts.rows[0].email,
+                firstName: resEmployees.rows[0].firstname,
+                middleInitial: resEmployees.rows[0].middlename.charAt(0) + '.',
+                lastName: resEmployees.rows[0].lastname,
+                role: 1,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: '1h'
+              });
+
+            const token3 = jwt.sign({
+                mode: 4,
+                employeeId: resAccounts.rows[0].employeeid,
+                email: resAccounts.rows[0].email,
+                firstName: resEmployees.rows[0].firstname,
+                middleInitial: resEmployees.rows[0].middlename.charAt(0),
+                lastName: resEmployees.rows[0].lastname,
+                role: 3,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: '1h'
+              });
+
+            res.send({
+              status: 200,
+              mode: 5,
+              message: 'Successfully logged in.',
+              from: `/login`,
+              token1,
+              token2,
+              token3
+            })
+
           } else {
-            mode = 4
+            const token = jwt.sign(
+              {
+                mode: 4,
+                employeeId: resAccounts.rows[0].employeeid,
+                email: resAccounts.rows[0].email,
+                firstName: resEmployees.rows[0].firstname,
+                middleInitial: resEmployees.rows[0].middlename.charAt(0),
+                lastName: resEmployees.rows[0].lastname,
+                role: resAccounts.rows[0].roleid,
+              },
+              process.env.JWT_KEY,
+              {
+                expiresIn: '1h'
+              }
+            );
+
+            res.send({
+              status: 200,
+              mode: 4,
+              message: 'Successfully logged in.',
+              from: `/login`,
+              token
+            })
           }
-
-          const token = jwt.sign(
-            {
-              mode,
-              employeeId: resAccounts.rows[0].employeeid,
-              email: resAccounts.rows[0].email,
-              firstName: resEmployees.rows[0].firstname,
-              middleInitial: resEmployees.rows[0].middlename.charAt(0),
-              lastName: resEmployees.rows[0].lastname,
-              role: resAccounts.rows[0].roleid,
-            },
-            process.env.JWT_KEY,
-            {
-              expiresIn: '1h'
-            }
-          );
-
-          res.send({
-            status: 200,
-            message: 'Successfully logged in.',
-            from: `/login`,
-            token
-          })
         })
       } else {
         return res.send({
