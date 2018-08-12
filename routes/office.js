@@ -11,13 +11,18 @@ const events = require('../events');
 const pool = new Pool();
 
 router.get('/', (req, res) => {
-  pool.query('SELECT * FROM office ORDER BY datecreated DESC ', [], (errDepartments, resOffice) => {
-    if(errDepartments) {
-      return res.send({
-        status: 500,
-        from: `/office/create`,
-        message: 'Something went wrong.'
-      })
+  const end = e => {
+    console.log(e);
+    res.send({
+      status: 500,
+      from: `/departments/`,
+      message: 'Something went wrong.'
+    })
+  };
+
+  const cb = (errOffice, resOffice) => {
+    if(errOffice) {
+      end(errOffice);
     }
 
     let rows = [];
@@ -43,57 +48,83 @@ router.get('/', (req, res) => {
 
     res.send({
       status: 200,
-      from: `/departments/create`,
+      from: `/departments`,
       message: 'Successful.',
       data: rows
     })
-  })
+  };
+
+  const jobs = (e, r) => {
+    if(e) {
+      throw e
+    }
+
+    res.send({
+      status: 200,
+      from: `/departments`,
+      message: 'Successful.',
+      data: r.rows
+    })
+  };
+
+  if(req.query.jobs) {
+    pool.query('SELECT officename AS label, id AS value FROM office ORDER BY officename', [], jobs);
+  } else {
+    pool.query('SELECT * FROM office ORDER BY datecreated DESC', [], cb);
+  }
 });
 
 router.post('/create/', (req, res) => {
-  pool.query('INSERT INTO office(officename, description, slug, datecreated, key) VALUES ($1, $2, $3, $4, $5)', [req.body.officeName, newlineBr(req.body.officeDescription.trim()), req.body.slug, moment().format(), uuidv1()], (errOffice, resOffice) => {
-    if(errOffice) {
-      return res.send({
-        status: 500,
+  let i = 1; //for loop index
+
+  const end = () => {
+    res.send({
+      status: 500,
+      from: `/departments/create`,
+      message: 'Something went wrong.'
+    })
+  };
+
+  const cb3 = (errClusters, resClusters) => {
+    if(errClusters) {
+      end();
+    } else {
+      req.app.io.sockets.emit(events.office);
+
+      res.send({
+        status: 200,
         from: `/departments/create`,
-        message: 'Something went wrong.'
+        message: 'Successful.'
       })
     }
+  };
 
-    pool.query('SELECT id FROM office WHERE slug = $1', [req.body.slug], (errSelect, resSelect) => {
-      if(errSelect) {
-        return res.send({
-          status: 500,
-          from: `/departments/create`,
-          message: 'Something went wrong.'
-        })
-      } else {
-        const id = resSelect.rows[0].id;
+  const cb2 = (errSelect, resSelect) => {
+    if(errSelect) {
+      end();
+    } else {
+      const id = resSelect.rows[0].id;
+      let values = '';
 
-        for(let i = 0; i < req.body.numberOfClusters; i++) {
-          pool.query('INSERT INTO clusters(clusternumber, officeid) VALUES ($1, $2)', [i + 1, id], (errClusters, resClusters) => {
-            if(errClusters) {
-              return res.send({
-                status: 500,
-                from: `/departments/create`,
-                message: 'Something went wrong.'
-              })
-            } else {
-              if(i === req.body.numberOfClusters - 1) {
-                req.app.io.sockets.emit(events.office);
+      for(; i <= req.body.numberOfClusters; i++) {
+        values = values.concat(`(${i}, ${id}, '${uuidv1()}')` + (i < req.body.numberOfClusters ? ', ' : ''));
 
-                res.send({
-                  status: 200,
-                  from: `/departments/create`,
-                  message: 'Successful.'
-                })
-              }
-            }
-          })
+        if(i === req.body.numberOfClusters) {
+          pool.query('INSERT INTO clusters(clusternumber, officeid, key) VALUES ' + values, [], cb3)
         }
       }
-    });
-  })
+    }
+  };
+
+  const cb = (errOffice, resOffice) => {
+    if(errOffice) {
+      end();
+    }
+
+    pool.query('SELECT id FROM office WHERE slug = $1', [req.body.slug], cb2);
+  };
+
+  pool.query('INSERT INTO office(officename, description, slug, datecreated, key) VALUES ($1, $2, $3, $4, $5)', [req.body.officeName, newlineBr(req.body.officeDescription.trim()), req.body.slug, moment().format(), uuidv1()], cb)
 });
 
 router.post('/delete/', (req, res) => {
@@ -125,7 +156,7 @@ router.post('/delete/', (req, res) => {
 });
 
 router.get('/view/', (req, res) => {
-  pool.query('SELECT * FROM office WHERE slug = $1', [req.query.slug], (errOffice, resOffice) => {
+  pool.query('SELECT * FROM office JOIN clusters on office.id = clusters.officeid AND slug = $1', [req.query.slug], (errOffice, resOffice) => {
     if(errOffice) {
       return res.send({
         status: 500,
