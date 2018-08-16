@@ -1,3 +1,4 @@
 module.exports = {
-  office: 'OFFICE'
+  office: 'OFFICE',
+  qualificationStandards: 'QUALIFICATION_STANDARDS'
 };
