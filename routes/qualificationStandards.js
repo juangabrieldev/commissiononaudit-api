@@ -64,7 +64,7 @@ router.get('/', (req, res) => { //view all
   const end = e => {
     res.send({
       status: 500,
-      from: `/departments/`,
+      from: `/qualification-standards/`,
       message: 'Something went wrong.'
     })
   };
