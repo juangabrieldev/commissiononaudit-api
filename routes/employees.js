@@ -2,45 +2,34 @@ require('dotenv').config();
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
+const uuidv1 = require('uuid/v1');
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: 'localhost',
-  database: 'postgres',
-  password: process.env.DB_PASSWORD,
-  port: 5432,
-});
-//
-// app.get('/', (req, res) => {
-//   res.send('hello');
-// });
-//
-// app.get('/employees', (req, res) => {
-//   pool.query('SELECT * FROM employee', (err, result) => {
-//     res.send(result)
-//   })
-// });
-//
-// app.get('/announcements', (req, res) => {
-//   pool.query('SELECT * FROM announcement', (err, result) => {
-//     res.send(result)
-//   })
-// });
+const pool = new Pool();
 
-router.get('/', (req, res) => {
-  pool.query('SELECT * FROM employee', (err, result) => {
-    res.status(200).send({
-      result
+router.post('/create', (req, res) => { //for react-select
+  const cb = (err, resu) => {
+    console.log(err);
+    res.send({
+      status: 200,
     })
-  })
-});
+  };
 
-router.get('/error', (req, res) => {
-  pool.query('SELECT * FROM employee', (err, result) => {
-    res.status(500).send({
-      result
-    })
-  })
+  const query = 'INSERT INTO employees(employeeid, jobid, firstname, middlename, lastname, clusterid, key, role, officeid) ' +
+    'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)';
+
+  const data = [
+    parseInt(req.body.employeeId),
+    req.body.jobId,
+    req.body.firstName,
+    req.body.middleName,
+    req.body.lastName,
+    req.body.clusterId,
+    uuidv1(),
+    req.body.role,
+    req.body.office,
+  ];
+
+  pool.query(query, data, cb);
 });
 
 module.exports = router;

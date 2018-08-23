@@ -6,7 +6,8 @@ const moment = require('moment');
 const { Pool } = require('pg');
 const uuidv1 = require('uuid/v1');
 const newlineBr = require('newline-br');
-const events = require('../events');
+const { office } = require('../events');
+const slug = require('slugify');
 
 const pool = new Pool();
 
@@ -39,6 +40,7 @@ router.get('/', (req, res) => {
         slug: resOffice.rows[i].slug,
         id: resOffice.rows[i].id,
         key: resOffice.rows[i].key,
+        count: resOffice.rows[i].count,
         dateCreated: dateCreated,
         newDepartment
       };
@@ -70,8 +72,24 @@ router.get('/', (req, res) => {
   if(req.query.jobs) {
     pool.query('SELECT officename AS label, id AS value FROM office ORDER BY officename', [], jobs);
   } else {
-    pool.query('SELECT * FROM office ORDER BY datecreated DESC', [], cb);
+    const query = 'SELECT office.id, office.officename, office.datecreated, office.key, office.slug, COUNT(employees.employeeid) ' +
+      'FROM office LEFT OUTER JOIN employees ON employees.officeid = office.id ' +
+      'GROUP BY office.id ' +
+      'ORDER BY office.datecreated DESC';
+
+    pool.query(query, [], cb);
   }
+});
+
+router.get('/search/:value', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query('SELECT * FROM office WHERE officename ILIKE $1 ORDER BY  datecreated DESC', ['%' + req.params.value + '%'], cb);
 });
 
 router.post('/create/', (req, res) => {
@@ -89,7 +107,7 @@ router.post('/create/', (req, res) => {
     if(errClusters) {
       end();
     } else {
-      req.app.io.sockets.emit(events.office);
+      req.app.io.sockets.emit(office);
 
       res.send({
         status: 200,
@@ -121,10 +139,10 @@ router.post('/create/', (req, res) => {
       end();
     }
 
-    pool.query('SELECT id FROM office WHERE slug = $1', [req.body.slug], cb2);
+    pool.query('SELECT id FROM office WHERE slug = $1', [slug(req.body.officeName.toLowerCase())], cb2);
   };
 
-  pool.query('INSERT INTO office(officename, description, slug, datecreated, key) VALUES ($1, $2, $3, $4, $5)', [req.body.officeName, newlineBr(req.body.officeDescription.trim()), req.body.slug, moment().format(), uuidv1()], cb)
+  pool.query('INSERT INTO office(officename, description, slug, datecreated, key) VALUES ($1, $2, $3, $4, $5)', [req.body.officeName, newlineBr(req.body.officeDescription.trim()), slug(req.body.officeName.toLowerCase()), moment().format(), uuidv1()], cb)
 });
 
 router.post('/delete/', (req, res) => {
@@ -143,7 +161,7 @@ router.post('/delete/', (req, res) => {
           })
         }
 
-        req.app.io.sockets.emit(events.office);
+        req.app.io.sockets.emit(office);
 
         res.send({
           status: 200,
@@ -171,6 +189,17 @@ router.get('/view/', (req, res) => {
       data: resOffice.rows
     })
   })
+});
+
+router.get('/clusters/:id', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query('SELECT clusternumber AS label, id AS value FROM clusters WHERE officeid = $1 ORDER BY label', [req.params.id], cb)
 });
 
 module.exports = router;

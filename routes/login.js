@@ -250,7 +250,7 @@ router.post('/', (req, res) => {
     bcrypt.compare(req.body.password, resAccounts.rows[0].password, function(err, result) {
       if(result) {
         pool.query('SELECT firstname, middlename, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
-          if(resAccounts.rows[0].roleid === 1) {
+          if(resAccounts.rows[0].roleid === 7) { //if ICTO-Maintenance
             const token1 = jwt.sign({
                 mode: 5,
                 employeeId: resAccounts.rows[0].employeeid,
@@ -265,14 +265,14 @@ router.post('/', (req, res) => {
                 expiresIn: '1h'
               });
 
-            const token2 = jwt.sign({
+            const token2 = jwt.sign({ //token 2 for 'logged in mode'
                 mode: 4,
                 employeeId: resAccounts.rows[0].employeeid,
                 email: resAccounts.rows[0].email,
                 firstName: resEmployees.rows[0].firstname,
                 middleInitial: resEmployees.rows[0].middlename.charAt(0) + '.',
                 lastName: resEmployees.rows[0].lastname,
-                role: 1,
+                role: resAccounts.rows[0].roleid,
               },
               process.env.JWT_KEY,
               {
@@ -286,7 +286,7 @@ router.post('/', (req, res) => {
                 firstName: resEmployees.rows[0].firstname,
                 middleInitial: resEmployees.rows[0].middlename.charAt(0),
                 lastName: resEmployees.rows[0].lastname,
-                role: 3,
+                role: 2,
               },
               process.env.JWT_KEY,
               {

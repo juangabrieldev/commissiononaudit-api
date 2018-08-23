@@ -6,11 +6,13 @@ const upload = require('express-fileupload');
 
 const announcements = require('./routes/announcements');
 const applications = require('./routes/applications');
+const jobs = require('./routes/jobs');
 const office = require('./routes/office');
 const login = require('./routes/login');
 const employees = require('./routes/employees');
 const documents = require('./routes/documents');
 const qualificationStandards = require('./routes/qualificationStandards');
+const roles = require('./routes/roles');
 
 app.use(cors());
 app.use(upload());
@@ -18,10 +20,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+app.use('/employees', employees);
+app.use('/jobs', jobs);
 app.use('/login', login);
 app.use('/office', office);
 app.use('/documents', documents);
 app.use('/qualification-standards', qualificationStandards);
+app.use('/roles', roles);
 
 const server = app.listen(4000, port => {
   console.log('listening at 4000')

@@ -36,15 +36,16 @@ router.get('/', (req, res) => { //view all
       end(err)
     } else {
       data.trainings = [...res.rows];
-      eligibilities();
+      eligibility();
     }
   };
 
-  const eligibilitiesCb = (err, res) => {
+  const eligibilityCb = (err, res) => {
     if(err) {
       end(err)
     } else {
-      data.eligibilities = [...res.rows];
+      data.eligibility = [...res.rows];
+      final();
     }
   };
 
@@ -56,9 +57,8 @@ router.get('/', (req, res) => { //view all
     pool.query('SELECT * FROM trainings', [], trainingsCb);
   };
 
-  const eligibilities = () => {
-    pool.query('SELECT * FROM eligibilities', [], eligibilitiesCb);
-    final();
+  const eligibility = () => {
+    pool.query('SELECT * FROM eligibility', [], eligibilityCb);
   };
 
   const end = e => {
@@ -81,7 +81,7 @@ router.get('/', (req, res) => { //view all
   pool.query('SELECT * FROM education WHERE type = 1', [], educationSpecificCb);
 });
 
-router.post('/education', (req, res) => {
+router.post('/', (req, res) => {
   const end = e => {
     res.send({
       status: 500,
@@ -90,28 +90,43 @@ router.post('/education', (req, res) => {
     })
   };
 
-  const final = () => {
+  const cb = (err, ress) => {
+    if(err) {
+      return end(err)
+    }
+
     req.app.io.sockets.emit(events.qualificationStandards);
 
     res.send({
       status: 200,
-      from: `/departments/delete`,
-      message: 'Successful.'
+      message: 'Successful'
     })
   };
 
-  const cb = (err, res) => {
-    if(err) {
-      end(err)
-    } else {
-      final();
-    }
+  const query = (q, data) => {
+    pool.query(q, data, cb)
   };
 
-  pool.query('INSERT INTO education(name, type, key) VALUES ($1, $2, $3)', [req.body.name, req.body.type, uuidv1()], cb)
+  switch(req.body.type) {
+    case 1:
+    case 2: {
+      query('INSERT INTO education(name, type, key) VALUES ($1, $2, $3)', [req.body.value, req.body.type, uuidv1()]);
+      break;
+    }
+
+    case 3: {
+      query('INSERT INTO trainings(name, key) VALUES ($1, $2)', [req.body.value, uuidv1()]);
+      break;
+    }
+
+    case 4: {
+      query('INSERT INTO eligibility(name, key) VALUES ($1, $2)', [req.body.value, uuidv1()]);
+      break;
+    }
+  }
 });
 
-router.post('/trainings', (req, res) => {
+router.post('/delete', (req, res) => {
   const end = e => {
     res.send({
       status: 500,
@@ -120,25 +135,91 @@ router.post('/trainings', (req, res) => {
     })
   };
 
-  const final = () => {
+  const cb = (err, ress) => {
+    if(err) {
+      return end(err)
+    }
+
     req.app.io.sockets.emit(events.qualificationStandards);
 
     res.send({
       status: 200,
-      from: `/departments/delete`,
-      message: 'Successful.'
+      message: 'Successful'
     })
   };
 
-  const cb = (err, res) => {
-    if(err) {
-      end(err)
-    } else {
-      final();
-    }
+  const query = (q, data) => {
+    pool.query(q, data, cb)
   };
 
-  pool.query('INSERT INTO trainings(name, key) VALUES ($1, $2)', [req.body.name, uuidv1()], cb)
+  switch(req.body.type) {
+    case 1:
+    case 2: {
+      query('DELETE FROM education WHERE id = $1', [req.body.id]);
+      break;
+    }
+
+    case 3: {
+      query('DELETE FROM trainings WHERE id = $1', [req.body.id]);
+      break;
+    }
+  }
+});
+
+router.get('/select', (req, res) => {
+  let specificCourses;
+  let customQualifications;
+  let eligibility;
+
+
+  const end = e => {
+    res.send({
+      e,
+      status: 500,
+      from: `/qualification-standards/`,
+      message: 'Something went wrong.'
+    })
+  };
+
+  const eligibilityCb = (err, ress) => {
+    if(err) {
+      return end(err);
+    }
+
+    eligibility = ress.rows;
+
+    res.send({
+      status: 200,
+      message: 'Successful',
+      data: {
+        specificCourses,
+        customQualifications,
+        eligibility
+      }
+    })
+  };
+
+  const customQualificationsCb = (err, res) => {
+    if(err) {
+      return end(err);
+    }
+
+    customQualifications = res.rows;
+
+    pool.query('SELECT id as value, name as label FROM eligibility ORDER BY label', [], eligibilityCb)
+  };
+
+  const specificCoursesCb = (err, res) => {
+    if(err) {
+      return end(err);
+    }
+
+    specificCourses = res.rows;
+    pool.query('SELECT id as value, name as label FROM education WHERE type = 2 ORDER BY label', [], customQualificationsCb)
+  };
+
+
+  pool.query('SELECT id as value, name as label FROM education WHERE type = 1 ORDER BY label', [], specificCoursesCb)
 });
 
 module.exports = router;
