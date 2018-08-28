@@ -8,7 +8,6 @@ const pool = new Pool();
 
 router.post('/create', (req, res) => { //for react-select
   const cb = (err, resu) => {
-    console.log(err);
     res.send({
       status: 200,
     })

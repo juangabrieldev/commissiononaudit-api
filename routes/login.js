@@ -8,6 +8,7 @@ const generate = require('nanoid/generate');
 const nodemailer = require('nodemailer');
 const randtoken = require('rand-token');
 const verificationEmail = require('../email/verification');
+const color = require('../colors');
 
 const pool = new Pool();
 
@@ -109,7 +110,7 @@ router.post('/register', (req, res) => {
       });
 
       const mailOptions = {
-        from: 'promotionmanagementsystem@gmail.com',
+        from: '"Developer Account" <promotionmanagementsystem@gmail.com>',
         to: req.body.email,
         subject: 'Verify your account',
         html: verificationEmail(user.firstName, token)
@@ -150,16 +151,8 @@ router.post('/register', (req, res) => {
               })
             }
 
-            client.query('INSERT INTO accounts(employeeid, password, email) VALUES ($1, $2, $3)', [req.body.employeeId, hash, req.body.email], (err, accountsRes) => {
-              if(shouldAbort(err)) {
-                return res.send({
-                  status: 500,
-                  from: `/login/register`,
-                  message: 'Something went wrong.'
-                })
-              }
-
-              client.query('INSERT INTO verifications(employeeid, token) VALUES ($1, $2)', [req.body.employeeId, token], (err, verRes) => {
+            client.query('SELECT role FROM employees WHERE employeeid = $1', [req.body.employeeId], (err, roleRes) => {
+              client.query('INSERT INTO accounts(employeeid, password, email, roleid, color) VALUES ($1, $2, $3, $4, $5)', [req.body.employeeId, hash, req.body.email, roleRes.rows[0].role, color()], (err, accountsRes) => {
                 if(shouldAbort(err)) {
                   return res.send({
                     status: 500,
@@ -168,52 +161,62 @@ router.post('/register', (req, res) => {
                   })
                 }
 
-                client.query('COMMIT', err => {
-                  if(err) {
-                    console.error('Error committing transaction', err.stack)
+                client.query('INSERT INTO verifications(employeeid, token) VALUES ($1, $2)', [req.body.employeeId, token], (err, verRes) => {
+                  if(shouldAbort(err)) {
+                    return res.send({
+                      status: 500,
+                      from: `/login/register`,
+                      message: 'Something went wrong.'
+                    })
                   }
 
-                  done();
-
-                  transporter.sendMail(mailOptions, (err, info) => {
+                  client.query('COMMIT', err => {
                     if(err) {
-                      console.error('Error in sending e-mail', err);
-                      client.query('ROLLBACK', err => {
-                        if(err) {
-                          console.error('Error in rolling back', err.stack);
-
-                          done();
-
-                          return res.send({
-                            status: 500,
-                            from: `/login/register`,
-                            message: 'Something went wrong.'
-                          })
-                        }
-                      })
+                      console.error('Error committing transaction', err.stack)
                     }
 
-                    const token = jwt.sign({
-                      mode: 2,
-                      employeeId: req.body.employeeId,
-                      email: req.body.email,
-                      firstName: user.firstName,
-                      lastName: user.lastName
-                    }, process.env.JWT_KEY, {
-                      expiresIn: '1h'
-                    });
+                    done();
 
-                    return res.send({
-                      status: 200,
-                      message: 'Successfully logged in.',
-                      from: `/login/register`,
-                      token
-                    })
-                  });
+                    transporter.sendMail(mailOptions, (err, info) => {
+                      if(err) {
+                        console.error('Error in sending e-mail', err);
+                        client.query('ROLLBACK', err => {
+                          if(err) {
+                            console.error('Error in rolling back', err.stack);
+
+                            done();
+
+                            return res.send({
+                              status: 500,
+                              from: `/login/register`,
+                              message: 'Something went wrong.'
+                            })
+                          }
+                        })
+                      }
+
+                      const token = jwt.sign({
+                        mode: 2,
+                        employeeId: req.body.employeeId,
+                        email: req.body.email,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        role: roleRes.rows[0].role
+                      }, process.env.JWT_KEY, {
+                        expiresIn: '1h'
+                      });
+
+                      return res.send({
+                        status: 200,
+                        message: 'Successfully logged in.',
+                        from: `/login/register`,
+                        token
+                      })
+                    });
+                  })
                 })
               })
-            })
-
+            });
           })
         });
       });
@@ -221,7 +224,164 @@ router.post('/register', (req, res) => {
   }
 });
 
-router.post('/verify', (req, res) => {
+router.get('/verify/', (req, res) => {
+  const cb3 = (err, resu) => {
+    res.send({
+      status: 200,
+      message: 'Successful.'
+    })
+  };
+
+  const cb2 = (err, resu) => {
+    pool.query('DELETE FROM verifications WHERE employeeid = $1', [req.query.employeeid], cb3);
+  };
+
+  const cb = (err, resu) => {
+    if(resu.rows.length === 1) {
+      pool.query('UPDATE accounts SET verified = true WHERE employeeid = $1', [req.query.employeeid], cb2);
+    } else {
+      res.send({
+        status: 401,
+        message: 'Invalid verification link.'
+      })
+    }
+  };
+
+  pool.query('SELECT * FROM verifications WHERE employeeid = $1 AND token = $2', [req.query.employeeid, req.query.token], cb)
+});
+
+router.post('/verify/resend', (req, res) => {
+
+  const token = randtoken.generate(30);
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'promotionmanagementsystem@gmail.com',
+      pass: 'commissiononaudit2018'
+    }
+  });
+
+  const mailOptions = {
+    from: '"Developer Account" <promotionmanagementsystem@gmail.com>',
+    to: req.body.email,
+    subject: 'Verify your account',
+    html: verificationEmail(req.body.firstName, token)
+  };
+
+  const cb = (err, resu) => {
+    transporter.sendMail(mailOptions, (errMail, info) => {
+      res.send({status: 200})
+    });
+  };
+
+  pool.query('UPDATE verifications SET token = $1 WHERE employeeid = $2', [token, req.body.employeeId], cb);
+});
+
+router.post('/verify/success', (req, res) => {
+  let imageUrl = {}; //for display picture
+
+  const cb2 = (err, resu) => {
+    const employeeId = parseInt(req.body.employeeId, 10);
+    const email = req.body.email;
+    const firstName = req.body.firstName;
+    const lastName = req.body.lastName;
+
+    if(resu.rows[0].role === 7) { //if ICTO-Maintenance
+      const token1 = jwt.sign({
+          mode: 5,
+          employeeId,
+          email,
+          firstName,
+          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
+          lastName,
+          role: resu.rows[0].role,
+          imageUrl
+        },
+        process.env.JWT_KEY,
+        {
+          expiresIn: '1h'
+        });
+
+      const token2 = jwt.sign({ //token 2 for 'logged in mode'
+          mode: 4,
+          employeeId,
+          email,
+          firstName,
+          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
+          lastName,
+          role: resu.rows[0].role,
+          imageUrl
+        },
+        process.env.JWT_KEY,
+        {
+          expiresIn: '1h'
+        });
+
+      const token3 = jwt.sign({
+          mode: 4,
+          employeeId,
+          email,
+          firstName,
+          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
+          lastName,
+          role: 2,
+          imageUrl
+        },
+        process.env.JWT_KEY,
+        {
+          expiresIn: '1h'
+        });
+
+      res.send({
+        status: 200,
+        mode: 5,
+        message: 'Successfully logged in.',
+        from: `/login`,
+        token1,
+        token2,
+        token3
+      })
+
+    } else {
+      const token = jwt.sign(
+        {
+          mode: 4,
+          employeeId,
+          email,
+          firstName,
+          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
+          lastName,
+          role: resu.rows[0].role,
+          imageUrl
+        },
+        process.env.JWT_KEY,
+        {
+          expiresIn: '1h'
+        }
+      );
+
+      res.send({
+        status: 200,
+        mode: 4,
+        message: 'Successfully logged in.',
+        from: `/login`,
+        token
+      })
+    }
+  };
+
+  const cb = (err, resu) => {
+    imageUrl = {
+      hasUrl: resu.rows[0].personaldatasheet != null,
+      url: resu.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
+      color: resu.rows[0].color
+    };
+
+    pool.query('SELECT role, middlename FROM employees WHERE employeeid = $1', [req.body.employeeId], cb2);
+  };
+
+  pool.query('SELECT * FROM accounts WHERE employeeid = $1', [req.body.employeeId], cb);
 });
 
 router.post('/', (req, res) => {
@@ -250,84 +410,132 @@ router.post('/', (req, res) => {
     bcrypt.compare(req.body.password, resAccounts.rows[0].password, function(err, result) {
       if(result) {
         pool.query('SELECT firstname, middlename, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
-          if(resAccounts.rows[0].roleid === 7) { //if ICTO-Maintenance
-            const token1 = jwt.sign({
-                mode: 5,
-                employeeId: resAccounts.rows[0].employeeid,
-                email: resAccounts.rows[0].email,
-                firstName: resEmployees.rows[0].firstname,
-                middleInitial: resEmployees.rows[0].middlename.charAt(0) + '.',
-                lastName: resEmployees.rows[0].lastname,
-                role: resAccounts.rows[0].roleid,
-              },
-              process.env.JWT_KEY,
-              {
-                expiresIn: '1h'
-              });
+          pool.query('SELECT verified FROM accounts WHERE employeeid = $1', [req.body.employeeId], (errVerification, resVerification) => {
+            if(!resVerification.rows[0].verified) {
+              const token = jwt.sign(
+                {
+                  mode: 2,
+                  employeeId: resAccounts.rows[0].employeeid,
+                  email: resAccounts.rows[0].email,
+                  firstName: resEmployees.rows[0].firstname,
+                  middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                  lastName: resEmployees.rows[0].lastname,
+                  role: resAccounts.rows[0].roleid,
+                },
+                process.env.JWT_KEY,
+                {
+                  expiresIn: '1h'
+                }
+              );
 
-            const token2 = jwt.sign({ //token 2 for 'logged in mode'
+              res.send({
+                status: 200,
                 mode: 4,
-                employeeId: resAccounts.rows[0].employeeid,
-                email: resAccounts.rows[0].email,
-                firstName: resEmployees.rows[0].firstname,
-                middleInitial: resEmployees.rows[0].middlename.charAt(0) + '.',
-                lastName: resEmployees.rows[0].lastname,
-                role: resAccounts.rows[0].roleid,
-              },
-              process.env.JWT_KEY,
-              {
-                expiresIn: '1h'
+                message: 'Successfully logged in.',
+                from: `/login`,
+                token
               });
+            } else {
+              if(resAccounts.rows[0].roleid === 7) { //if ICTO-Maintenance
+                const token1 = jwt.sign({
+                    mode: 5,
+                    employeeId: resAccounts.rows[0].employeeid,
+                    email: resAccounts.rows[0].email,
+                    firstName: resEmployees.rows[0].firstname,
+                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                    lastName: resEmployees.rows[0].lastname,
+                    role: resAccounts.rows[0].roleid,
+                    imageUrl: {
+                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
+                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
+                      color: resAccounts.rows[0].color
+                    }
+                  },
+                  process.env.JWT_KEY,
+                  {
+                    expiresIn: '1h'
+                  });
 
-            const token3 = jwt.sign({
-                mode: 4,
-                employeeId: resAccounts.rows[0].employeeid,
-                email: resAccounts.rows[0].email,
-                firstName: resEmployees.rows[0].firstname,
-                middleInitial: resEmployees.rows[0].middlename.charAt(0),
-                lastName: resEmployees.rows[0].lastname,
-                role: 2,
-              },
-              process.env.JWT_KEY,
-              {
-                expiresIn: '1h'
-              });
+                const token2 = jwt.sign({ //token 2 for 'logged in mode'
+                    mode: 4,
+                    employeeId: resAccounts.rows[0].employeeid,
+                    email: resAccounts.rows[0].email,
+                    firstName: resEmployees.rows[0].firstname,
+                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                    lastName: resEmployees.rows[0].lastname,
+                    role: resAccounts.rows[0].roleid,
+                    imageUrl: {
+                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
+                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
+                      color: resAccounts.rows[0].color
+                    }
+                  },
+                  process.env.JWT_KEY,
+                  {
+                    expiresIn: '1h'
+                  });
 
-            res.send({
-              status: 200,
-              mode: 5,
-              message: 'Successfully logged in.',
-              from: `/login`,
-              token1,
-              token2,
-              token3
-            })
+                const token3 = jwt.sign({
+                    mode: 4,
+                    employeeId: resAccounts.rows[0].employeeid,
+                    email: resAccounts.rows[0].email,
+                    firstName: resEmployees.rows[0].firstname,
+                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                    lastName: resEmployees.rows[0].lastname,
+                    role: 2,
+                    imageUrl: {
+                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
+                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
+                      color: resAccounts.rows[0].color
+                    }
+                  },
+                  process.env.JWT_KEY,
+                  {
+                    expiresIn: '1h'
+                  });
 
-          } else {
-            const token = jwt.sign(
-              {
-                mode: 4,
-                employeeId: resAccounts.rows[0].employeeid,
-                email: resAccounts.rows[0].email,
-                firstName: resEmployees.rows[0].firstname,
-                middleInitial: resEmployees.rows[0].middlename.charAt(0),
-                lastName: resEmployees.rows[0].lastname,
-                role: resAccounts.rows[0].roleid,
-              },
-              process.env.JWT_KEY,
-              {
-                expiresIn: '1h'
+                res.send({
+                  status: 200,
+                  mode: 5,
+                  message: 'Successfully logged in.',
+                  from: `/login`,
+                  token1,
+                  token2,
+                  token3
+                })
+
+              } else {
+                const token = jwt.sign(
+                  {
+                    mode: 4,
+                    employeeId: resAccounts.rows[0].employeeid,
+                    email: resAccounts.rows[0].email,
+                    firstName: resEmployees.rows[0].firstname,
+                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                    lastName: resEmployees.rows[0].lastname,
+                    role: resAccounts.rows[0].roleid,
+                    imageUrl: {
+                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
+                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
+                      color: resAccounts.rows[0].color
+                    }
+                  },
+                  process.env.JWT_KEY,
+                  {
+                    expiresIn: '1h'
+                  }
+                );
+
+                res.send({
+                  status: 200,
+                  mode: 4,
+                  message: 'Successfully logged in.',
+                  from: `/login`,
+                  token
+                })
               }
-            );
-
-            res.send({
-              status: 200,
-              mode: 4,
-              message: 'Successfully logged in.',
-              from: `/login`,
-              token
-            })
-          }
+            }
+          });
         })
       } else {
         return res.send({

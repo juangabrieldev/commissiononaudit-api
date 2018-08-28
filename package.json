@@ -18,6 +18,7 @@
     "express-fileupload": "^0.4.0",
     "file-type": "^8.1.0",
     "flat-color-generator": "^1.0.1",
+    "flat-ui-colors": "^2.1.8",
     "googleapis": "^32.0.0",
     "jsonwebtoken": "^8.2.0",
     "lodash": "^4.17.10",
