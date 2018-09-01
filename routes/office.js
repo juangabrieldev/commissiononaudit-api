@@ -8,6 +8,7 @@ const uuidv1 = require('uuid/v1');
 const newlineBr = require('newline-br');
 const { office } = require('../events');
 const slug = require('slugify');
+const bcrypt = require('bcrypt');
 
 const pool = new Pool();
 
@@ -146,31 +147,42 @@ router.post('/create/', (req, res) => {
 });
 
 router.post('/delete/', (req, res) => {
-  let values = '';
+  const cb = (err, resu) => {
+    bcrypt.compare(req.body.password, resu.rows[0].password, (error, result) => {
+      if(result) {
+        let values = '';
 
-  for(let i = 0; i < req.body.id.length; i++) {
-    values = values.concat(`$${i + 1}` + (i < req.body.id.length - 1 ? ', ' : ''));
+        for(let i = 0; i < req.body.id.length; i++) {
+          values = values.concat(`$${i + 1}` + (i < req.body.id.length - 1 ? ', ' : ''));
 
-    if(i === req.body.id.length - 1) {
-      pool.query(`DELETE FROM office WHERE id IN (${values})`, req.body.id, (errDepartments, resDepartments) => {
-        if(errDepartments) {
-          return res.send({
-            status: 500,
-            from: `/departments/create`,
-            message: 'Something went wrong.'
-          })
+          if(i === req.body.id.length - 1) {
+            pool.query(`DELETE FROM office WHERE id IN (${values})`, req.body.id, (errDepartments, resDepartments) => {
+              if(errDepartments) {
+                return res.send({
+                  status: 500,
+                  from: `/departments/create`,
+                  message: 'Something went wrong.'
+                })
+              }
+
+              req.app.io.sockets.emit(office);
+
+              res.send({
+                status: 200,
+                from: `/departments/delete`,
+                message: 'Successful.'
+              })
+            })
+          }
         }
-
-        req.app.io.sockets.emit(office);
-
+      } else {
         res.send({
-          status: 200,
-          from: `/departments/delete`,
-          message: 'Successful.'
+          status: 401
         })
-      })
-    }
-  }
+      }
+    })
+  };
+  pool.query('SELECT password FROM accounts WHERE employeeid = $1', [req.body.employeeId], cb);
 });
 
 router.get('/view/', (req, res) => {

@@ -5,7 +5,6 @@ const auth = require('../authentication/auth');
 const moment = require('moment');
 const { Pool } = require('pg');
 const fs = require('fs');
-const fileType = require('file-type');
 const cheerio = require('cheerio');
 const cfe = require('check-file-extension');
 const request = require('request');

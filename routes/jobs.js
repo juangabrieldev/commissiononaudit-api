@@ -13,6 +13,20 @@ const pool = new Pool();
 
 router.get('/', (req, res) => {
   const cb = (err, resu) => {
+    const end = e => {
+      console.log(e);
+
+      res.send({
+        status: 500,
+        e,
+        from: `/qualification-standards/`,
+        message: 'Something went wrong.'
+      })
+    };
+
+    if(err) {
+      return end(err)
+    }
     res.send({
       status: 200,
       from: `/qualification-standards/`,
@@ -21,7 +35,7 @@ router.get('/', (req, res) => {
     })
   };
 
-  const query = 'SELECT jobtitle, jobs.key, slug, COUNT(employees.employeeid) ' +
+  const query = 'SELECT jobtitle, jobs.key, jobs.slug, COUNT(employees.employeeid) ' +
     'FROM jobs LEFT OUTER JOIN employees ON employees.jobid = jobs.jobid ' +
     'GROUP BY jobs.jobid, jobs.jobtitle ' +
     'ORDER BY jobs.jobtitle';
@@ -31,6 +45,7 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   const end = e => {
+    console.log(e);
     res.send({
       status: 500,
       e,
@@ -58,8 +73,12 @@ router.post('/', (req, res) => {
     }
   };
 
+  const selectedOffice = {
+    office: req.body.selectedOffice
+  };
+
   pool.query('INSERT INTO jobs(office, jobtitle, jobdescription, qualifications, key, datecreated, slug) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-    [req.body.selectedOffice, req.body.jobName, req.body.jobDescription, qualifications, uuidv1(), moment().format(), slug(req.body.jobName.toLowerCase())],
+    [selectedOffice, req.body.jobName, req.body.jobDescription, qualifications, uuidv1(), moment().format(), slug(req.body.jobName.toLowerCase())],
     cb
   );
 });
@@ -73,7 +92,11 @@ router.get('/view/:slug', (req, res) => {
 });
 
 router.post('/select', (req, res) => { //for react-select
-  const query = 'SELECT jobtitle as label, jobid as value FROM jobs WHERE $1 = ANY(office)';
+  const selectedOffice = {
+    office: [req.body.selectedOffice]
+  };
+
+  const query = 'SELECT jobtitle AS label, jobid AS value FROM jobs WHERE office @> $1';
 
   const cb = (err, resu) => {
     res.send({
@@ -82,7 +105,7 @@ router.post('/select', (req, res) => { //for react-select
     })
   };
 
-  pool.query(query, [req.body.selectedOffice], cb)
+  pool.query(query, [selectedOffice], cb)
 });
 
 module.exports = router;

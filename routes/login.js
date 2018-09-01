@@ -287,88 +287,30 @@ router.post('/verify/success', (req, res) => {
     const firstName = req.body.firstName;
     const lastName = req.body.lastName;
 
-    if(resu.rows[0].role === 7) { //if ICTO-Maintenance
-      const token1 = jwt.sign({
-          mode: 5,
-          employeeId,
-          email,
-          firstName,
-          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
-          lastName,
-          role: resu.rows[0].role,
-          imageUrl
-        },
-        process.env.JWT_KEY,
-        {
-          expiresIn: '1h'
-        });
+    const token = jwt.sign(
+      {
+        mode: 3,
+        employeeId,
+        email,
+        firstName,
+        middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
+        lastName,
+        role: resu.rows[0].role,
+        imageUrl
+      },
+      process.env.JWT_KEY,
+      {
+        expiresIn: '1h'
+      }
+    );
 
-      const token2 = jwt.sign({ //token 2 for 'logged in mode'
-          mode: 4,
-          employeeId,
-          email,
-          firstName,
-          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
-          lastName,
-          role: resu.rows[0].role,
-          imageUrl
-        },
-        process.env.JWT_KEY,
-        {
-          expiresIn: '1h'
-        });
-
-      const token3 = jwt.sign({
-          mode: 4,
-          employeeId,
-          email,
-          firstName,
-          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
-          lastName,
-          role: 2,
-          imageUrl
-        },
-        process.env.JWT_KEY,
-        {
-          expiresIn: '1h'
-        });
-
-      res.send({
-        status: 200,
-        mode: 5,
-        message: 'Successfully logged in.',
-        from: `/login`,
-        token1,
-        token2,
-        token3
-      })
-
-    } else {
-      const token = jwt.sign(
-        {
-          mode: 4,
-          employeeId,
-          email,
-          firstName,
-          middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
-          lastName,
-          role: resu.rows[0].role,
-          imageUrl
-        },
-        process.env.JWT_KEY,
-        {
-          expiresIn: '1h'
-        }
-      );
-
-      res.send({
-        status: 200,
-        mode: 4,
-        message: 'Successfully logged in.',
-        from: `/login`,
-        token
-      })
-    }
+    res.send({
+      status: 200,
+      mode: 4,
+      message: 'Successfully logged in.',
+      from: `/login`,
+      token
+    })
   };
 
   const cb = (err, resu) => {
@@ -410,7 +352,7 @@ router.post('/', (req, res) => {
     bcrypt.compare(req.body.password, resAccounts.rows[0].password, function(err, result) {
       if(result) {
         pool.query('SELECT firstname, middlename, lastname FROM employees WHERE employeeid = $1', [req.body.employeeId], (errEmployees, resEmployees) => {
-          pool.query('SELECT verified FROM accounts WHERE employeeid = $1', [req.body.employeeId], (errVerification, resVerification) => {
+          pool.query('SELECT verified, imagepath FROM accounts WHERE employeeid = $1', [req.body.employeeId], (errVerification, resVerification) => {
             if(!resVerification.rows[0].verified) {
               const token = jwt.sign(
                 {
@@ -436,104 +378,137 @@ router.post('/', (req, res) => {
                 token
               });
             } else {
-              if(resAccounts.rows[0].roleid === 7) { //if ICTO-Maintenance
-                const token1 = jwt.sign({
-                    mode: 5,
-                    employeeId: resAccounts.rows[0].employeeid,
-                    email: resAccounts.rows[0].email,
-                    firstName: resEmployees.rows[0].firstname,
-                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                    lastName: resEmployees.rows[0].lastname,
-                    role: resAccounts.rows[0].roleid,
-                    imageUrl: {
-                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
-                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
-                      color: resAccounts.rows[0].color
-                    }
-                  },
-                  process.env.JWT_KEY,
-                  {
-                    expiresIn: '1h'
-                  });
+              pool.query('SELECT registrationcomplete FROM accounts WHERE employeeid = $1', [req.body.employeeId], (errRegCom, resRegCom) => {
+                if(resRegCom.rows[0].registrationcomplete) {
+                  if(resAccounts.rows[0].roleid === 7) { //if ICTO-Maintenance
+                    const token1 = jwt.sign({
+                        mode: 5,
+                        employeeId: resAccounts.rows[0].employeeid,
+                        email: resAccounts.rows[0].email,
+                        firstName: resEmployees.rows[0].firstname,
+                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                        lastName: resEmployees.rows[0].lastname,
+                        role: resAccounts.rows[0].roleid,
+                        imageUrl: {
+                          hasUrl: !!resAccounts.rows[0].imagepath,
+                          url: resAccounts.rows[0].imagepath,
+                          color: resAccounts.rows[0].color
+                        }
+                      },
+                      process.env.JWT_KEY,
+                      {
+                        expiresIn: '1h'
+                      });
 
-                const token2 = jwt.sign({ //token 2 for 'logged in mode'
-                    mode: 4,
-                    employeeId: resAccounts.rows[0].employeeid,
-                    email: resAccounts.rows[0].email,
-                    firstName: resEmployees.rows[0].firstname,
-                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                    lastName: resEmployees.rows[0].lastname,
-                    role: resAccounts.rows[0].roleid,
-                    imageUrl: {
-                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
-                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
-                      color: resAccounts.rows[0].color
-                    }
-                  },
-                  process.env.JWT_KEY,
-                  {
-                    expiresIn: '1h'
-                  });
+                    const token2 = jwt.sign({ //token 2 for 'logged in mode'
+                        mode: 4,
+                        employeeId: resAccounts.rows[0].employeeid,
+                        email: resAccounts.rows[0].email,
+                        firstName: resEmployees.rows[0].firstname,
+                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                        lastName: resEmployees.rows[0].lastname,
+                        role: resAccounts.rows[0].roleid,
+                        imageUrl: {
+                          hasUrl: !!resAccounts.rows[0].imagepath,
+                          url: resAccounts.rows[0].imagepath,
+                          color: resAccounts.rows[0].color
+                        }
+                      },
+                      process.env.JWT_KEY,
+                      {
+                        expiresIn: '1h'
+                      });
 
-                const token3 = jwt.sign({
-                    mode: 4,
-                    employeeId: resAccounts.rows[0].employeeid,
-                    email: resAccounts.rows[0].email,
-                    firstName: resEmployees.rows[0].firstname,
-                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                    lastName: resEmployees.rows[0].lastname,
-                    role: 2,
-                    imageUrl: {
-                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
-                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
-                      color: resAccounts.rows[0].color
-                    }
-                  },
-                  process.env.JWT_KEY,
-                  {
-                    expiresIn: '1h'
-                  });
+                    const token3 = jwt.sign({
+                        mode: 4,
+                        employeeId: resAccounts.rows[0].employeeid,
+                        email: resAccounts.rows[0].email,
+                        firstName: resEmployees.rows[0].firstname,
+                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                        lastName: resEmployees.rows[0].lastname,
+                        role: 2,
+                        imageUrl: {
+                          hasUrl: !!resAccounts.rows[0].imagepath,
+                          url: resAccounts.rows[0].imagepath,
+                          color: resAccounts.rows[0].color
+                        }
+                      },
+                      process.env.JWT_KEY,
+                      {
+                        expiresIn: '1h'
+                      });
 
-                res.send({
-                  status: 200,
-                  mode: 5,
-                  message: 'Successfully logged in.',
-                  from: `/login`,
-                  token1,
-                  token2,
-                  token3
-                })
+                    res.send({
+                      status: 200,
+                      mode: 5,
+                      message: 'Successfully logged in.',
+                      from: `/login`,
+                      token1,
+                      token2,
+                      token3
+                    })
 
-              } else {
-                const token = jwt.sign(
-                  {
-                    mode: 4,
-                    employeeId: resAccounts.rows[0].employeeid,
-                    email: resAccounts.rows[0].email,
-                    firstName: resEmployees.rows[0].firstname,
-                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                    lastName: resEmployees.rows[0].lastname,
-                    role: resAccounts.rows[0].roleid,
-                    imageUrl: {
-                      hasUrl: resAccounts.rows[0].personaldatasheet != null,
-                      url: resAccounts.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
-                      color: resAccounts.rows[0].color
-                    }
-                  },
-                  process.env.JWT_KEY,
-                  {
-                    expiresIn: '1h'
+                  } else {
+                    const token = jwt.sign(
+                      {
+                        mode: 4,
+                        employeeId: resAccounts.rows[0].employeeid,
+                        email: resAccounts.rows[0].email,
+                        firstName: resEmployees.rows[0].firstname,
+                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                        lastName: resEmployees.rows[0].lastname,
+                        role: resAccounts.rows[0].roleid,
+                        imageUrl: {
+                          hasUrl: !!resAccounts.rows[0].imagepath,
+                          url: resAccounts.rows[0].imagepath,
+                          color: resAccounts.rows[0].color
+                        }
+                      },
+                      process.env.JWT_KEY,
+                      {
+                        expiresIn: '1h'
+                      }
+                    );
+
+                    res.send({
+                      status: 200,
+                      mode: 4,
+                      message: 'Successfully logged in.',
+                      from: `/login`,
+                      token
+                    })
                   }
-                );
+                } else {
+                  const token = jwt.sign(
+                    {
+                      mode: 3,
+                      employeeId: resAccounts.rows[0].employeeid,
+                      email: resAccounts.rows[0].email,
+                      firstName: resEmployees.rows[0].firstname,
+                      middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                      lastName: resEmployees.rows[0].lastname,
+                      role: resAccounts.rows[0].roleid,
+                      imageUrl: {
+                        hasUrl: !!resAccounts.rows[0].imagepath,
+                        url: resAccounts.rows[0].imagepath,
+                        color: resAccounts.rows[0].color
+                      }
+                    },
+                    process.env.JWT_KEY,
+                    {
+                      expiresIn: '1h'
+                    }
+                  );
 
-                res.send({
-                  status: 200,
-                  mode: 4,
-                  message: 'Successfully logged in.',
-                  from: `/login`,
-                  token
-                })
-              }
+                  res.send({
+                    status: 200,
+                    mode: 3,
+                    message: 'Successfully logged in.',
+                    from: `/login`,
+                    token
+                  })
+                }
+              })
             }
           });
         })
