@@ -25,12 +25,16 @@ router.post('/', (req, res) => {
     }, (err, response, body) => {
       const url = JSON.parse(body).data.file.url.short;
 
-      request.get(url, (errUrl, responseUrl, bodyUrl) => {
-        const $ = cheerio.load(bodyUrl);
-        res.send({
-          status: 200,
-          url: $('#download-wrapper div a#download-url').attr('href')
-        })
+      // request.get(url, (errUrl, responseUrl, bodyUrl) => {
+      //   const $ = cheerio.load(bodyUrl);
+      //   res.send({
+      //     status: 200,
+      //     url: $('#download-wrapper div a#download-url').attr('href')
+      //   })
+      // })
+      res.send({
+        status: 200,
+        url
       })
     });
   });

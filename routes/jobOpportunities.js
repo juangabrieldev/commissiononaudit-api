@@ -9,10 +9,11 @@ const cheerio = require('cheerio');
 const cfe = require('check-file-extension');
 const request = require('request');
 const uuidv1 = require('uuid/v1');
+const newlineBr = require('newline-br');
 
 const pool = new Pool();
 
-router.get('/jobs/:id', (req, res) => {
+router.get('/jobs/:id', (req, res) => { //for react-select
   const cb2 = (err, resu) => {
     res.send({
       status: 200,
@@ -35,8 +36,15 @@ router.get('/jobs/:id', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-  const cb = (err, resu) => {
+  const cb2 = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
 
+  const cb = (err, resu) => {
+    pool.query('SELECT id, deadline, content, key FROM jobopportunities WHERE officeid = $1', [resu.rows[0].officeid], cb2)
   };
 
   pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.params.id], cb);
@@ -48,7 +56,9 @@ router.post('/', (req, res) => {
   };
 
   const cb = (err, resu) => {
-    pool.query('INSERT INTO jobopportunities(deadline, content, key, officeid) VALUES ($1, $2, $3, $4)', [req.body.deadline, req.body.content, uuidv1(), resu.rows[0].officeid], cb2)
+    pool.query('INSERT INTO jobopportunities(deadline, content, key, officeid, description) VALUES ($1, $2, $3, $4, $5)',
+      [req.body.deadline, req.body.content, uuidv1(), resu.rows[0].officeid, newlineBr(req.body.description.trim())],
+      cb2)
   };
 
   pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.body.employeeId], cb);

@@ -222,4 +222,37 @@ router.get('/select', (req, res) => {
   pool.query('SELECT id as value, name as label FROM education WHERE type = 1 ORDER BY label', [], specificCoursesCb)
 });
 
+router.get('/courses', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query('SELECT id as value, name as label FROM education WHERE type = 1 ORDER BY label', [], cb)
+});
+
+router.get('/eligibilities', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query('SELECT name AS label, CAST(id AS TEXT) AS value FROM eligibility ORDER BY label', [], cb)
+});
+
+router.get('/trainings', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query('SELECT name AS label, CAST(id AS TEXT) AS value FROM trainings ORDER BY label', [], cb)
+});
+
 module.exports = router;

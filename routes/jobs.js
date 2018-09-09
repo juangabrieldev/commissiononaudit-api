@@ -77,8 +77,8 @@ router.post('/', (req, res) => {
     office: req.body.selectedOffice
   };
 
-  pool.query('INSERT INTO jobs(office, jobtitle, jobdescription, qualifications, key, datecreated, slug) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-    [selectedOffice, req.body.jobName, req.body.jobDescription, qualifications, uuidv1(), moment().format(), slug(req.body.jobName.toLowerCase())],
+  pool.query('INSERT INTO jobs(office, jobtitle, jobdescription, qualifications, key, datecreated, slug, salarygrade) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+    [selectedOffice, req.body.jobName, req.body.jobDescription, qualifications, uuidv1(), moment().format(), slug(req.body.jobName.toLowerCase()), req.body.salaryGrade],
     cb
   );
 });

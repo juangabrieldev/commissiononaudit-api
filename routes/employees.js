@@ -104,7 +104,12 @@ router.post('/registration-progress/:id', (req, res) => {
 });
 
 router.post('/complete-registration/:id', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({status: 200})
+  };
 
+  pool.query('UPDATE accounts SET personaldatasheet = $1, registrationcomplete = TRUE WHERE employeeid = $2',
+    [req.body.personalDataSheet, req.params.id], cb);
 });
 
 router.get('/', (req, res) => {
