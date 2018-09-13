@@ -99,7 +99,7 @@ router.post('/register', (req, res) => {
     }
 
     case 3: {
-      const token = randtoken.generate(30);
+      const token = randtoken.generate(5).toUpperCase();
 
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -252,7 +252,7 @@ router.get('/verify/', (req, res) => {
 
 router.post('/verify/resend', (req, res) => {
 
-  const token = randtoken.generate(30);
+  const token = randtoken.generate(5).toUpperCase();
 
   const transporter = nodemailer.createTransport({
     service: 'gmail',
