@@ -72,6 +72,29 @@ router.get('/:id', (req, res) => {
   pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.params.id], cb);
 });
 
+//view job opportunity by id
+router.get('/view/:id', (req, res) => {
+  const cb2 = (err, resu) => {
+    if(resu.rows.length < 1) {
+      res.send({status: 404})
+    } else {
+      res.send({
+        status: 200,
+        data: resu.rows
+      })
+    }
+  };
+
+  const cb = (err, resu) => {
+    const officeId = resu.rows[0].officeid;
+
+    pool.query('SELECT content, description FROM jobopportunities WHERE id = $1 AND officeid = $2', [req.params.id, officeId], cb2);
+  };
+
+  pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.query.e], cb);
+});
+
+//create job opportunity
 router.post('/', (req, res) => {
   const cb2 = (err, resu) => {
     res.send({status: 200})

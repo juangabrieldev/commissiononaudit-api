@@ -108,4 +108,15 @@ router.post('/select', (req, res) => { //for react-select
   pool.query(query, [selectedOffice], cb)
 });
 
+router.get('/:id', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows[0]
+    })
+  };
+
+  pool.query('SELECT qualifications, salarygrade FROM jobs WHERE jobid = $1', [req.params.id], cb);
+});
+
 module.exports = router;
