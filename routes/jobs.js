@@ -56,7 +56,7 @@ router.post('/', (req, res) => {
 
   qualifications = {
     education: req.body.selectedEducation,
-    eligibility: req.body.selectedEligibilities,
+    eligibility: req.body.selectedEligibility,
     yearsOfExperience: req.body.yearsOfExperience,
     hoursOfTraining: req.body.hoursOfTraining
   };
@@ -116,7 +116,7 @@ router.get('/:id', (req, res) => {
     })
   };
 
-  pool.query('SELECT qualifications, salarygrade FROM jobs WHERE jobid = $1', [req.params.id], cb);
+  pool.query('SELECT jobtitle, qualifications, salarygrade FROM jobs WHERE jobid = $1', [req.params.id], cb);
 });
 
 module.exports = router;

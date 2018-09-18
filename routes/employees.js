@@ -112,6 +112,7 @@ router.post('/complete-registration/:id', (req, res) => {
     [req.body.personalDataSheet, req.params.id], cb);
 });
 
+//get all employees
 router.get('/', (req, res) => {
   const query = 'SELECT employees.employeeid, employees.firstname, ' +
     'employees.middlename, employees.lastname, ' +
@@ -132,6 +133,36 @@ router.get('/', (req, res) => {
   };
 
   pool.query(query, [], cb);
+});
+
+router.get('/personal-data-sheet/:id', (req, res) => {
+  let data = {
+    personalDataSheet: null,
+    job: null
+  };
+
+  const cb3 = (err, resu) => {
+    data.job = resu.rows[0];
+
+    res.send({
+      status: 200,
+      data
+    })
+  };
+
+  const cb2 = (err, resu) => {
+    const jobId = resu.rows[0].jobid;
+
+    pool.query('SELECT jobtitle, salarygrade FROM jobs WHERE jobid = $1', [jobId], cb3);
+  };
+
+  const cb = (err, resu) => {
+    data.personalDataSheet = resu.rows[0].personaldatasheet;
+
+    pool.query('SELECT jobid FROM employees WHERE employeeid = $1', [req.params.id], cb2);
+  };
+
+  pool.query('SELECT personaldatasheet FROM accounts WHERE employeeid = $1', [req.params.id], cb);
 });
 
 module.exports = router;
