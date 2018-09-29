@@ -74,7 +74,7 @@ router.get('/:id', (req, res) => {
 
 //view job opportunity by id
 router.get('/view/:id', (req, res) => {
-  const cb2 = (err, resu) => {
+  const cb = (err, resu) => {
     if(resu.rows.length < 1) {
       res.send({status: 404})
     } else {
@@ -85,13 +85,10 @@ router.get('/view/:id', (req, res) => {
     }
   };
 
-  const cb = (err, resu) => {
-    const officeId = resu.rows[0].officeid;
-
-    pool.query('SELECT content, description FROM jobopportunities WHERE id = $1 AND officeid = $2', [req.params.id, officeId], cb2);
-  };
-
-  pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.query.e], cb);
+  pool.query(`SELECT j.datecreated, content, officename, j.description 
+    FROM jobopportunities j 
+    JOIN office o ON j.officeid = o.id 
+    WHERE j.id = $1`, [req.params.id], cb);
 });
 
 //create job opportunity
@@ -109,8 +106,8 @@ router.post('/', (req, res) => {
       });
     }
 
-    pool.query('INSERT INTO jobopportunities(content, key, officeid, description) VALUES ($1, $2, $3, $4)',
-      [req.body.content, uuidv1(), resu.rows[0].officeid, newlineBr(req.body.description.trim())],
+    pool.query('INSERT INTO jobopportunities(content, key, officeid, description, datecreated) VALUES ($1, $2, $3, $4, $5)',
+      [req.body.content, uuidv1(), resu.rows[0].officeid, newlineBr(req.body.description.trim()), moment().format()],
       cb2)
   };
 

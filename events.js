@@ -3,5 +3,6 @@ module.exports = {
   qualificationStandards: 'QUALIFICATION_STANDARDS',
   jobs: 'JOBS',
   employees: 'EMPLOYEES',
-  avatar: 'AVATAR'
+  avatar: 'AVATAR',
+  notifications: 'NOTIFICATIONS'
 };

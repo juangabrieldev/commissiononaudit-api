@@ -152,7 +152,96 @@ router.post('/register', (req, res) => {
             }
 
             client.query('SELECT role FROM employees WHERE employeeid = $1', [req.body.employeeId], (err, roleRes) => {
-              client.query('INSERT INTO accounts(employeeid, password, email, roleid, color) VALUES ($1, $2, $3, $4, $5)', [req.body.employeeId, hash, req.body.email, roleRes.rows[0].role, color()], (err, accountsRes) => {
+              const personalDataSheet = {
+                trainingsAttended: [
+                  {
+                    date: null,
+                    hours: null,
+                    training: null,
+                    dataSource: [],
+                    isAbleToAdd: false
+                  }
+                ],
+                educationalBackground: {
+                  college: {
+                    nameOfSchool: null,
+                    periodOfAttendance: {
+                      to: null,
+                      from: null
+                    },
+                    highestLevelUnitsEarned: '',
+                    basicEducationDegreeCourse: null,
+                    scholarshipAcademicHonorsReceived: [
+                      ''
+                    ]
+                  },
+                  secondary: {
+                    nameOfSchool: null,
+                    periodOfAttendance: {
+                      to: null,
+                      from: null
+                    },
+                    highestLevelUnitsEarned: '',
+                    basicEducationDegreeCourse: null,
+                    scholarshipAcademicHonorsReceived: [
+                      ''
+                    ]
+                  },
+                  elementary: {
+                    nameOfSchool: null,
+                    periodOfAttendance: {
+                      to: null,
+                      from: null
+                    },
+                    highestLevelUnitsEarned: '',
+                    basicEducationDegreeCourse: null,
+                    scholarshipAcademicHonorsReceived: [
+                      ''
+                    ]
+                  },
+                  vocational: {
+                    nameOfSchool: null,
+                    periodOfAttendance: {
+                      to: null,
+                      from: null
+                    },
+                    highestLevelUnitsEarned: '',
+                    basicEducationDegreeCourse: null,
+                    scholarshipAcademicHonorsReceived: [
+                      ''
+                    ]
+                  },
+                  graduateStudies: {
+                    nameOfSchool: null,
+                    periodOfAttendance: {
+                      to: null,
+                      from: null
+                    },
+                    highestLevelUnitsEarned: '',
+                    basicEducationDegreeCourse: null,
+                    scholarshipAcademicHonorsReceived: [
+                      ''
+                    ]
+                  }
+                },
+                civilServiceEligibility: [],
+                workExperienceWithinCoa: [
+                  {
+                    isAbleToAdd: false,
+                    positionTitle: ''
+                  }
+                ],
+                workExperienceOutsideCoa: [
+                  {
+                    isAbleToAdd: false,
+                    positionTitle: ''
+                  }
+                ]
+              };
+
+              client.query('INSERT INTO accounts(employeeid, password, email, roleid, color, personalDataSheet) VALUES ($1, $2, $3, $4, $5, $6)',
+                [req.body.employeeId, hash, req.body.email, roleRes.rows[0].role, color(), personalDataSheet],
+                (err, accountsRes) => {
                 if(shouldAbort(err)) {
                   return res.send({
                     status: 500,
@@ -315,15 +404,15 @@ router.post('/verify/success', (req, res) => {
 
   const cb = (err, resu) => {
     imageUrl = {
-      hasUrl: resu.rows[0].personaldatasheet != null,
-      url: resu.rows[0].personaldatasheet != null ? resAccounts.rows[0].personaldatasheet : null,
+      hasUrl: resu.rows[0].imagepath != null,
+      url: resu.rows[0].imagepath != null ? resu.rows[0].imagepath : null,
       color: resu.rows[0].color
     };
 
     pool.query('SELECT role, middlename FROM employees WHERE employeeid = $1', [req.body.employeeId], cb2);
   };
 
-  pool.query('SELECT * FROM accounts WHERE employeeid = $1', [req.body.employeeId], cb);
+  pool.query('SELECT imagepath, color FROM accounts WHERE employeeid = $1', [req.body.employeeId], cb);
 });
 
 router.post('/', (req, res) => {

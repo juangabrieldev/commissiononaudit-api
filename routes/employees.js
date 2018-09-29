@@ -6,7 +6,9 @@ const uuidv1 = require('uuid/v1');
 const slug = require('slugify');
 const { employees } = require('../events');
 const moment = require('moment');
+const jwt = require('jsonwebtoken');
 
+const { notifications } = require('../events');
 
 const pool = new Pool();
 
@@ -104,8 +106,49 @@ router.post('/registration-progress/:id', (req, res) => {
 });
 
 router.post('/complete-registration/:id', (req, res) => {
+  let token;
+
+  const cb3 = () => {
+    req.app.io.emit(notifications);
+
+    res.send({
+      status: 200,
+      token
+    })
+  };
+
+  const cb2 = (err, resu) => {
+    token = jwt.sign({
+      mode: 4,
+      employeeId: resu.rows[0].employeeid,
+      email: resu.rows[0].email,
+      firstName: resu.rows[0].firstname,
+      middleInitial: (resu.rows[0].middlename != null ? resu.rows[0].middlename.charAt(0) + '.' : null),
+      lastName: resu.rows[0].lastname,
+      role: resu.rows[0].roleid,
+      imageUrl: {
+        hasUrl: !!resu.rows[0].imagepath,
+        url: resu.rows[0].imagepath,
+        color: resu.rows[0].color
+      }
+    },
+    process.env.JWT_KEY,
+    {
+      expiresIn: '1h'
+    });
+
+    const content = {
+      type: 'default',
+      message: `<strong>Success! Your application has been completed. Now you can start working on the system.</strong>`
+    };
+
+    pool.query('INSERT INTO notifications(to, content) VALUES ($1, $2)', [resu.rows[0].employeeid, content], cb3);
+  };
+
   const cb = (err, resu) => {
-    res.send({status: 200})
+    pool.query(`SELECT a.employeeid, a.email, e.firstname, e.middlename, lastname, a.roleid, a.imagepath, a.color 
+      FROM accounts a JOIN employees e on a.employeeid = e.employeeid
+      WHERE a.employeeid = $1`, [req.params.id], cb2);
   };
 
   pool.query('UPDATE accounts SET personaldatasheet = $1, registrationcomplete = TRUE WHERE employeeid = $2',
@@ -123,7 +166,7 @@ router.get('/', (req, res) => {
     'FROM employees ' +
     'LEFT OUTER JOIN accounts on employees.employeeid = accounts.employeeid ' +
     'GROUP BY employees.employeeid, accounts.verified, accounts.registrationcomplete ' +
-    'ORDER BY employees.lastname';
+    'ORDER BY employees.firstname';
 
   cb = (err, resu) => {
     res.send({
@@ -135,34 +178,41 @@ router.get('/', (req, res) => {
   pool.query(query, [], cb);
 });
 
+//get employee info by employeeId
 router.get('/personal-data-sheet/:id', (req, res) => {
   let data = {
     personalDataSheet: null,
-    job: null
+    job: {
+      jobTitle: null,
+      officeName: null,
+      salaryGrade: null,
+    },
+    employeeId: null
   };
 
-  const cb3 = (err, resu) => {
-    data.job = resu.rows[0];
+  const cb = (err, resu) => {
+    data.job.jobTitle = resu.rows[0].jobtitle;
+    data.job.officeName = resu.rows[0].officename;
+    data.job.salaryGrade = resu.rows[0].salarygrade;
+    data.personalDataSheet = resu.rows[0].personaldatasheet;
+    data.employeeId = resu.rows[0].employeeid;
+
+    if(!data.personalDataSheet.workExperienceWithinCoa[0].hasOwnProperty('officeName')) {
+      data.personalDataSheet.workExperienceWithinCoa[0].positionTitle = data.job.jobTitle;
+      data.personalDataSheet.workExperienceWithinCoa[0].officeName = resu.rows[0].officename;
+    }
 
     res.send({
       status: 200,
       data
-    })
+    });
   };
 
-  const cb2 = (err, resu) => {
-    const jobId = resu.rows[0].jobid;
-
-    pool.query('SELECT jobtitle, salarygrade FROM jobs WHERE jobid = $1', [jobId], cb3);
-  };
-
-  const cb = (err, resu) => {
-    data.personalDataSheet = resu.rows[0].personaldatasheet;
-
-    pool.query('SELECT jobid FROM employees WHERE employeeid = $1', [req.params.id], cb2);
-  };
-
-  pool.query('SELECT personaldatasheet FROM accounts WHERE employeeid = $1', [req.params.id], cb);
+  pool.query(`SELECT a.employeeid, personaldatasheet, jobtitle, salarygrade, officename FROM accounts a
+    JOIN employees e ON a.employeeid = e.employeeid
+    JOIN office o on e.officeid = o.id
+    JOIN jobs j ON e.jobid = j.jobid
+    WHERE e.employeeid = $1`, [req.params.id], cb);
 });
 
 module.exports = router;
