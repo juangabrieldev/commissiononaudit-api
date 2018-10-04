@@ -6,6 +6,7 @@ const upload = require('express-fileupload');
 
 const announcements = require('./routes/announcements');
 const applications = require('./routes/applications');
+const evaluations = require('./routes/evaluations');
 const jobs = require('./routes/jobs');
 const jobOpportunities = require('./routes/jobOpportunities');
 const office = require('./routes/office');
@@ -24,6 +25,7 @@ app.use(express.static('public'));
 
 app.use('/applications', applications);
 app.use('/employees', employees);
+app.use('/evaluations', evaluations);
 app.use('/jobs', jobs);
 app.use('/job-opportunities', jobOpportunities);
 app.use('/login', login);

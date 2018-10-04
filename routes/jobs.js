@@ -116,7 +116,7 @@ router.get('/:id', (req, res) => {
     })
   };
 
-  pool.query('SELECT jobtitle, qualifications, salarygrade FROM jobs WHERE jobid = $1', [req.params.id], cb);
+  pool.query('SELECT jobtitle, jobid, qualifications, salarygrade FROM jobs WHERE jobid = $1', [req.params.id], cb);
 });
 
 module.exports = router;

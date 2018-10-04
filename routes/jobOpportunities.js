@@ -56,20 +56,32 @@ router.get('/jobs/:id', (req, res) => {
   pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.params.id], cb);
 });
 
-//get job opportunities by officeid
-router.get('/:id', (req, res) => {
-  const cb2 = (err, resu) => {
+//for react-select, find all evaluators by employeeId
+router.get('/evaluators/:id', (req, res) => {
+  const cb = (err, resu) => {
     res.send({
       status: 200,
       data: resu.rows
     })
   };
 
+  pool.query(`SELECT employeeid as value, firstname || ' ' || lastname as label FROM employees 
+    WHERE officeid = (SELECT officeid FROM employees WHERE employeeid = $1) 
+    AND role = 3`, [req.params.id], cb);
+});
+
+//get job opportunities by officeid
+router.get('/:id', (req, res) => {
   const cb = (err, resu) => {
-    pool.query('SELECT id, content, key FROM jobopportunities WHERE officeid = $1 ORDER BY id DESC', [resu.rows[0].officeid], cb2)
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
   };
 
-  pool.query('SELECT officeid FROM employees WHERE employeeid = $1', [req.params.id], cb);
+  pool.query(`SELECT id, content, key FROM jobopportunities 
+    WHERE officeid = (SELECT officeid FROM employees WHERE employeeid = $1) 
+    ORDER BY id DESC`, [req.params.id], cb)
 });
 
 //view job opportunity by id
@@ -85,7 +97,7 @@ router.get('/view/:id', (req, res) => {
     }
   };
 
-  pool.query(`SELECT j.datecreated, content, officename, j.description 
+  pool.query(`SELECT j.datecreated, j.officeid, content, officename, j.description 
     FROM jobopportunities j 
     JOIN office o ON j.officeid = o.id 
     WHERE j.id = $1`, [req.params.id], cb);
@@ -98,7 +110,7 @@ router.post('/', (req, res) => {
   };
 
   const cb = (err, resu) => {
-    let  content = req.body.content;
+    let content = req.body.content;
 
     if(req.body.isSingleDeadline) {
       content.jobs.forEach(o => {
