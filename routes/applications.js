@@ -68,7 +68,11 @@ router.post('/', (req, res) => {
         remoteFilePath: null
       },
     },
-    rating: null
+    ratings: {
+      first: null,
+      second: null,
+      average: null
+    }
   };
 
   const cb = (err, resu) => {
@@ -88,15 +92,28 @@ router.post('/', (req, res) => {
 
 //view job and its applicants
 router.get('/applicants/:evaluatorId/:jobId/:jobOpportunityId', (req, res) => {
-  let data = {};
+  let data = {
+    hasStartedEvaluation: false,
+    evaluationIsDone: false
+  };
 
-  const cb2 = (err, resu) => {
-    data.hasStartedEvaluation = resu.rows.length > 0;
+  const cb3 = (err, resu) => {
+    if(resu.rows.length > 0) {
+      data.hasStartedEvaluation = true;
+      data.evaluationIsDone = resu.rows[0].contenders !== null;
+    }
 
     res.send({
       status: 200,
       data
     })
+  };
+
+  const cb2 = (err, resu) => {
+    data.hasStartedEvaluation = resu.rows.length > 0;
+
+    pool.query('SELECT contenders FROM evaluations WHERE jobopportunityid = $1 AND jobid = $2',
+      [req.params.jobOpportunityId, req.params.jobId], cb3);
   };
 
   const cb = (err, resu) => {

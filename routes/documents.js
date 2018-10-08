@@ -35,8 +35,10 @@ router.post('/', (req, res) => {
 
     let fileName;
 
-    //set the rating
-    details.rating = req.body.rating;
+    //set the ratings
+    details.ratings.first = req.body.firstRating;
+    details.ratings.second = req.body.secondRating;
+    details.ratings.average = req.body.averageRating;
 
     const workAssignmentHistory = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.workAssignmentHistory.name);
@@ -49,15 +51,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.workAssignmentHistory.localFilePath = fileName;
+          details.files.workAssignmentHistory.remoteFilePath = url;
 
-            details.files.workAssignmentHistory.localFilePath = fileName;
-            details.files.workAssignmentHistory.remoteFilePath = url;
-
-            cb2();
-          })
+          cb2();
         });
       });
     };
@@ -73,15 +70,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.workExperience.localFilePath = fileName;
+          details.files.workExperience.remoteFilePath = url;
 
-            details.files.workExperience.localFilePath = fileName;
-            details.files.workExperience.remoteFilePath = url;
-
-            workAssignmentHistory();
-          })
+          workAssignmentHistory();
         });
       });
     };
@@ -97,15 +89,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.trainingCertificate.localFilePath = fileName;
+          details.files.trainingCertificate.remoteFilePath = url;
 
-            details.files.trainingCertificate.localFilePath = fileName;
-            details.files.trainingCertificate.remoteFilePath = url;
-
-            workExperience();
-          })
+          workExperience();
         });
       });
     };
@@ -121,15 +108,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.swornStatement.localFilePath = fileName;
+          details.files.swornStatement.remoteFilePath = url;
 
-            details.files.swornStatement.localFilePath = fileName;
-            details.files.swornStatement.remoteFilePath = url;
-
-            trainingCertificate()
-          })
+          trainingCertificate()
         });
       });
     };
@@ -145,15 +127,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.positionDescriptionForm.localFilePath = fileName;
+          details.files.positionDescriptionForm.remoteFilePath = url;
 
-            details.files.positionDescriptionForm.localFilePath = fileName;
-            details.files.positionDescriptionForm.remoteFilePath = url;
-
-            swornStatement();
-          })
+          swornStatement();
         });
       });
     };
@@ -169,15 +146,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.performanceRatings2.localFilePath = fileName;
+          details.files.performanceRatings2.remoteFilePath = url;
 
-            details.files.performanceRatings2.localFilePath = fileName;
-            details.files.performanceRatings2.remoteFilePath = url;
-
-            positionDescriptionForm();
-          })
+          positionDescriptionForm();
         });
       });
     };
@@ -193,15 +165,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.performanceRatings1.localFilePath = fileName;
+          details.files.performanceRatings1.remoteFilePath = url;
 
-            details.files.performanceRatings1.localFilePath = fileName;
-            details.files.performanceRatings1.remoteFilePath = url;
-
-            performanceRatings2();
-          })
+          performanceRatings2();
         });
       });
     };
@@ -217,15 +184,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.memorandumOfRecommendation.localFilePath = fileName;
+          details.files.memorandumOfRecommendation.remoteFilePath = url;
 
-            details.files.memorandumOfRecommendation.localFilePath = fileName;
-            details.files.memorandumOfRecommendation.remoteFilePath = url;
-
-            performanceRatings1();
-          })
+          performanceRatings1();
         });
       });
     };
@@ -241,15 +203,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.diploma.localFilePath = fileName;
+          details.files.diploma.remoteFilePath = url;
 
-            details.files.diploma.localFilePath = fileName;
-            details.files.diploma.remoteFilePath = url;
-
-            memorandumOfRecommendation();
-          })
+          memorandumOfRecommendation();
         });
       });
     };
@@ -265,15 +222,10 @@ router.post('/', (req, res) => {
           const result = JSON.parse(body);
           const url = result.data.file.url.short;
 
-          request.get(url, (errUrl, responseUrl, bodyUrl) => {
-            const $ = cheerio.load(bodyUrl);
-            const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
+          details.files.applicationLetter.localFilePath = fileName;
+          details.files.applicationLetter.remoteFilePath = url;
 
-            details.files.applicationLetter.localFilePath = fileName;
-            details.files.applicationLetter.remoteFilePath = url;
-
-            diploma();
-          })
+          diploma();
         });
       });
     };
