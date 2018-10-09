@@ -7,8 +7,8 @@ const { Pool, Client } = require('pg');
 
 const pool = new Pool();
 
-router.get('/', (req, res) => {
-  console.log('hey')
+router.get('/byclusterevaluatorrankinglist/:jobId/:jobOpportunityId', (req, res) => {
+  pool.query('SELECT')
 });
 
 module.exports = router;
