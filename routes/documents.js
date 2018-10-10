@@ -43,190 +43,90 @@ router.post('/', (req, res) => {
     const workAssignmentHistory = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.workAssignmentHistory.name);
       req.files.workAssignmentHistory.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.workAssignmentHistory.localFilePath = fileName;
 
-          details.files.workAssignmentHistory.localFilePath = fileName;
-          details.files.workAssignmentHistory.remoteFilePath = url;
-
-          cb2();
-        });
+        cb2();
       });
     };
 
     const workExperience = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.workExperience.name);
       req.files.workExperience.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.workExperience.localFilePath = fileName;
 
-          details.files.workExperience.localFilePath = fileName;
-          details.files.workExperience.remoteFilePath = url;
-
-          workAssignmentHistory();
-        });
+        workAssignmentHistory();
       });
     };
 
     const trainingCertificate = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.trainingCertificate.name);
       req.files.trainingCertificate.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.trainingCertificate.localFilePath = fileName;
 
-          details.files.trainingCertificate.localFilePath = fileName;
-          details.files.trainingCertificate.remoteFilePath = url;
-
-          workExperience();
-        });
+        workExperience();
       });
     };
 
     const swornStatement = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.swornStatement.name);
       req.files.swornStatement.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.swornStatement.localFilePath = fileName;
 
-          details.files.swornStatement.localFilePath = fileName;
-          details.files.swornStatement.remoteFilePath = url;
-
-          trainingCertificate()
-        });
+        trainingCertificate()
       });
     };
 
     const positionDescriptionForm = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.positionDescriptionForm.name);
       req.files.positionDescriptionForm.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.positionDescriptionForm.localFilePath = fileName;
 
-          details.files.positionDescriptionForm.localFilePath = fileName;
-          details.files.positionDescriptionForm.remoteFilePath = url;
-
-          swornStatement();
-        });
+        swornStatement();
       });
     };
 
     const performanceRatings2 = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.performanceRatings2.name);
       req.files.performanceRatings2.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.performanceRatings2.localFilePath = fileName;
 
-          details.files.performanceRatings2.localFilePath = fileName;
-          details.files.performanceRatings2.remoteFilePath = url;
-
-          positionDescriptionForm();
-        });
+        positionDescriptionForm();
       });
     };
 
     const performanceRatings1 = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.performanceRatings1.name);
       req.files.performanceRatings1.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.performanceRatings1.localFilePath = fileName;
 
-          details.files.performanceRatings1.localFilePath = fileName;
-          details.files.performanceRatings1.remoteFilePath = url;
-
-          performanceRatings2();
-        });
+        performanceRatings2();
       });
     };
 
     const memorandumOfRecommendation = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.memorandumOfRecommendation.name);
       req.files.memorandumOfRecommendation.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.memorandumOfRecommendation.localFilePath = fileName;
 
-          details.files.memorandumOfRecommendation.localFilePath = fileName;
-          details.files.memorandumOfRecommendation.remoteFilePath = url;
-
-          performanceRatings1();
-        });
+        performanceRatings1();
       });
     };
 
     const diploma = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.diploma.name);
       req.files.diploma.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.diploma.localFilePath = fileName;
 
-          details.files.diploma.localFilePath = fileName;
-          details.files.diploma.remoteFilePath = url;
-
-          memorandumOfRecommendation();
-        });
+        memorandumOfRecommendation();
       });
     };
 
     const applicationLetter = () => {
       fileName = req.body.applicationId + '_' + randtoken.generate(5) + '_' + moment().format('YYYYMMDDHHmmss') + cfe(req.files.applicationLetter.name);
       req.files.applicationLetter.mv('public/documents/' + fileName, err => {
-        request.post('https://anonfile.com/api/upload?token=c4a3ba02129ee1f4', {
-          formData: {
-            file: fs.createReadStream('public/documents/' + fileName)
-          }
-        }, (err, response, body) => {
-          const result = JSON.parse(body);
-          const url = result.data.file.url.short;
+        details.files.applicationLetter.localFilePath = fileName;
 
-          details.files.applicationLetter.localFilePath = fileName;
-          details.files.applicationLetter.remoteFilePath = url;
-
-          diploma();
-        });
+        diploma();
       });
     };
 

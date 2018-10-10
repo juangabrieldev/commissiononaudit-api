@@ -55,6 +55,5 @@ workbook.xlsx.readFile('public/documents/byClusterEvaluatorRankingList.xlsx')
     {id:6, name: 'Barbara', dob: new Date()}
   ];
 
-
   worksheet.addRows(rows);
 });
