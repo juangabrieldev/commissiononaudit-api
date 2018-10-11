@@ -29,43 +29,33 @@ router.post('/', (req, res) => {
     files: {
       applicationLetter: {
         localFilePath: null,
-        remoteFilePath: null
       },
       diploma: {
         localFilePath: null,
-        remoteFilePath: null
       },
       memorandumOfRecommendation: {
         localFilePath: null,
-        remoteFilePath: null
       },
       performanceRatings1: {
         localFilePath: null,
-        remoteFilePath: null
       },
       performanceRatings2: {
         localFilePath: null,
-        remoteFilePath: null
       },
       positionDescriptionForm: {
         localFilePath: null,
-        remoteFilePath: null
       },
       swornStatement: {
         localFilePath: null,
-        remoteFilePath: null
       },
       trainingCertificate: {
         localFilePath: null,
-        remoteFilePath: null
       },
       workExperience: {
         localFilePath: null,
-        remoteFilePath: null
       },
       workAssignmentHistory: {
         localFilePath: null,
-        remoteFilePath: null
       },
     },
     ratings: {
@@ -76,7 +66,6 @@ router.post('/', (req, res) => {
   };
 
   const cb = (err, resu) => {
-    console.log(err);
     res.send({
       status: 200,
       token
@@ -199,16 +188,46 @@ router.get('/:id', (req, res) => {
 
 //get applications by evaluatorId, then group it inside jobs
 router.get('/evaluator/:id', (req, res) => {
-  const cb = (err, resu) => {
+  const data = {
+    current: [],
+    past: []
+  };
+
+  const cb2 = (err, resu) => {
+    data.past = resu.rows;
+
     res.send({
       status: 200,
-      data: resu.rows
+      data
     })
   };
 
-  pool.query(`SELECT DISTINCT ON(a.jobopportunityid) a.jobid, a.jobopportunityid, j.jobtitle 
-  FROM applications a JOIN jobs j ON a.jobid = j.jobid 
-  WHERE byclusterevaluatorid = $1`, [req.params.id], cb)
+  const cb = (err, resu) => {
+    data.current = resu.rows;
+
+    //query past applications
+    pool.query(`SELECT DISTINCT ON(a.jobopportunityid) a.jobid, a.jobopportunityid, j.jobtitle,
+      (
+        SELECT COUNT(*) FROM applications b WHERE b.jobopportunityid = a.jobopportunityid AND b.jobid = b.jobid
+      ) AS numberofapplicants
+      FROM applications a JOIN jobs j ON a.jobid = j.jobid
+      JOIN evaluations e ON e.jobid = a.jobid AND e.jobopportunityid = a.jobopportunityid
+      WHERE byclusterevaluatorid = $1 AND e.rankinglist IS NOT NULL`, [req.params.id], cb2);
+  };
+
+  //query current applications
+  pool.query(`SELECT DISTINCT ON(a.jobopportunityid) a.jobid, a.jobopportunityid, j.jobtitle,
+    (
+    SELECT COUNT(*) FROM evaluations e
+     WHERE jobid = a.jobid AND jobopportunityid = a.jobopportunityid
+    ) AS isstarted,
+    (
+      SELECT COUNT(*) FROM applications b WHERE b.jobopportunityid = a.jobopportunityid AND b.jobid = b.jobid
+    ) AS numberofapplicants
+    FROM applications a JOIN jobs j ON a.jobid = j.jobid
+    WHERE byclusterevaluatorid = $1 AND 0 = (SELECT COUNT(*) FROM evaluations e
+    WHERE jobid = a.jobid AND jobopportunityid = a.jobopportunityid
+    AND e.rankinglist IS NOT NULL); `, [req.params.id], cb)
 });
 
 module.exports = router;

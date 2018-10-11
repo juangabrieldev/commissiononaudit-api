@@ -136,18 +136,4 @@ router.post('/', (req, res) => {
   pool.query('SELECT details FROM applications WHERE token = $1', [req.body.applicationId], cb);
 });
 
-router.get('/:link', (req, res) => {
-  const url = `https://anonfile.com/${req.params.link}`;
-
-  request.get(url, (errUrl, responseUrl, bodyUrl) => {
-    const $ = cheerio.load(bodyUrl);
-    const remoteUrl = $('#download-wrapper div a#download-url').attr('href');
-
-    res.send({
-      status: 200,
-      remoteUrl
-    })
-  })
-});
-
 module.exports = router;
