@@ -469,108 +469,9 @@ router.post('/', (req, res) => {
             } else {
               pool.query('SELECT registrationcomplete FROM accounts WHERE employeeid = $1', [req.body.employeeId], (errRegCom, resRegCom) => {
                 if(resRegCom.rows[0].registrationcomplete) {
-                  if(resAccounts.rows[0].roleid === 7) { //if ICTO-Maintenance
-                    const token1 = jwt.sign({
-                        mode: 5,
-                        employeeId: resAccounts.rows[0].employeeid,
-                        email: resAccounts.rows[0].email,
-                        firstName: resEmployees.rows[0].firstname,
-                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                        lastName: resEmployees.rows[0].lastname,
-                        role: resAccounts.rows[0].roleid,
-                        imageUrl: {
-                          hasUrl: !!resAccounts.rows[0].imagepath,
-                          url: resAccounts.rows[0].imagepath,
-                          color: resAccounts.rows[0].color
-                        }
-                      },
-                      process.env.JWT_KEY,
-                      {
-                        expiresIn: '1h'
-                      });
-
-                    const token2 = jwt.sign({ //token 2 for 'logged in mode'
-                        mode: 4,
-                        employeeId: resAccounts.rows[0].employeeid,
-                        email: resAccounts.rows[0].email,
-                        firstName: resEmployees.rows[0].firstname,
-                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                        lastName: resEmployees.rows[0].lastname,
-                        role: resAccounts.rows[0].roleid,
-                        imageUrl: {
-                          hasUrl: !!resAccounts.rows[0].imagepath,
-                          url: resAccounts.rows[0].imagepath,
-                          color: resAccounts.rows[0].color
-                        }
-                      },
-                      process.env.JWT_KEY,
-                      {
-                        expiresIn: '1h'
-                      });
-
-                    const token3 = jwt.sign({
-                        mode: 4,
-                        employeeId: resAccounts.rows[0].employeeid,
-                        email: resAccounts.rows[0].email,
-                        firstName: resEmployees.rows[0].firstname,
-                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                        lastName: resEmployees.rows[0].lastname,
-                        role: 2,
-                        imageUrl: {
-                          hasUrl: !!resAccounts.rows[0].imagepath,
-                          url: resAccounts.rows[0].imagepath,
-                          color: resAccounts.rows[0].color
-                        }
-                      },
-                      process.env.JWT_KEY,
-                      {
-                        expiresIn: '1h'
-                      });
-
-                    res.send({
-                      status: 200,
-                      mode: 5,
-                      message: 'Successfully logged in.',
-                      from: `/login`,
-                      token1,
-                      token2,
-                      token3
-                    })
-
-                  } else {
-                    const token = jwt.sign(
-                      {
-                        mode: 4,
-                        employeeId: resAccounts.rows[0].employeeid,
-                        email: resAccounts.rows[0].email,
-                        firstName: resEmployees.rows[0].firstname,
-                        middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
-                        lastName: resEmployees.rows[0].lastname,
-                        role: resAccounts.rows[0].roleid,
-                        imageUrl: {
-                          hasUrl: !!resAccounts.rows[0].imagepath,
-                          url: resAccounts.rows[0].imagepath,
-                          color: resAccounts.rows[0].color
-                        }
-                      },
-                      process.env.JWT_KEY,
-                      {
-                        expiresIn: '1h'
-                      }
-                    );
-
-                    res.send({
-                      status: 200,
-                      mode: 4,
-                      message: 'Successfully logged in.',
-                      from: `/login`,
-                      token
-                    })
-                  }
-                } else {
                   const token = jwt.sign(
                     {
-                      mode: 3,
+                      mode: 4,
                       employeeId: resAccounts.rows[0].employeeid,
                       email: resAccounts.rows[0].email,
                       firstName: resEmployees.rows[0].firstname,
@@ -588,6 +489,35 @@ router.post('/', (req, res) => {
                       expiresIn: '1h'
                     }
                   );
+
+                  res.send({
+                    status: 200,
+                    mode: 4,
+                    message: 'Successfully logged in.',
+                    from: `/login`,
+                    token
+                  })
+                } else {
+                const token = jwt.sign(
+                  {
+                    mode: 3,
+                    employeeId: resAccounts.rows[0].employeeid,
+                    email: resAccounts.rows[0].email,
+                    firstName: resEmployees.rows[0].firstname,
+                    middleInitial: (resEmployees.rows[0].middlename != null ? resEmployees.rows[0].middlename.charAt(0) + '.' : null),
+                    lastName: resEmployees.rows[0].lastname,
+                    role: resAccounts.rows[0].roleid,
+                    imageUrl: {
+                      hasUrl: !!resAccounts.rows[0].imagepath,
+                      url: resAccounts.rows[0].imagepath,
+                      color: resAccounts.rows[0].color
+                    }
+                  },
+                  process.env.JWT_KEY,
+                  {
+                    expiresIn: '1h'
+                  }
+                );
 
                   res.send({
                     status: 200,

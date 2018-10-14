@@ -108,6 +108,33 @@ router.post('/select', (req, res) => { //for react-select
   pool.query(query, [selectedOffice], cb)
 });
 
+//get education type of job based on job id
+router.get('/education-type/:id', (req, res) => {
+  const cb2 = (err, resu) => {
+    const types = resu.rows.map(row => row.type);
+
+    res.send({
+      status: 200,
+      data: types
+    })
+  };
+
+  const cb = (err, resu) => {
+    const education = resu.rows[0].education;
+    const educationId = education.map(edu => edu.value);
+
+    //create the parameter
+    let params = [];
+
+    educationId.forEach((datum, i) => {
+      params.push(`$${i + 1}`);
+    });
+
+    pool.query(`SELECT type FROM education WHERE id IN (${params.join(',')})`, educationId, cb2);
+  };
+  pool.query(`SELECT qualifications -> 'education' as education FROM jobs WHERE jobid = $1`, [req.params.id], cb);
+});
+
 router.get('/:id', (req, res) => {
   const cb = (err, resu) => {
     res.send({

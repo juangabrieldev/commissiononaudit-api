@@ -230,4 +230,9 @@ router.get('/evaluator/:id', (req, res) => {
     AND e.rankinglist IS NOT NULL); `, [req.params.id], cb)
 });
 
+//submit the evaluation by its id to division chief
+router.get('/submit/:id', (req, res) => {
+
+});
+
 module.exports = router;

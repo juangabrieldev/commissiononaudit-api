@@ -80,8 +80,7 @@ router.get('/:id', (req, res) => {
   };
 
   pool.query(`SELECT id, content, key FROM jobopportunities 
-    WHERE officeid = (SELECT officeid FROM employees WHERE employeeid = $1) 
-    ORDER BY id DESC`, [req.params.id], cb)
+    ORDER BY id DESC`, [], cb)
 });
 
 //view job opportunity by id

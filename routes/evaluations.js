@@ -80,6 +80,8 @@ router.get('/:jobId/:jobOpportunityId', (req, res) => {
 
 //update an evaluation
 router.post('/update/', (req, res) => {
+  console.log('hey');
+
   const { jobId, jobOpportunityId, approved, rejected} = req.body;
 
   const rankingList = { rankingList: _.orderBy(approved, 'details.ratings.average', 'desc') };
