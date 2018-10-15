@@ -80,7 +80,7 @@ router.post('/', (req, res) => {
 });
 
 //view job and its applicants
-router.get('/applicants/:evaluatorId/:jobId/:jobOpportunityId', (req, res) => {
+router.get('/:evaluatorId/:jobId/:jobOpportunityId', (req, res) => {
   let data = {
     hasStartedEvaluation: false,
     evaluationIsDone: false

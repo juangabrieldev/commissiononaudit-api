@@ -74,9 +74,9 @@ router.post('/update/', (req, res) => {
     pool.query('UPDATE applications SET dateofevaluation = $1 WHERE jobopportunityid = $2 AND jobid = $3', [moment().format(), jobOpportunityId, jobId], cb2);
   };
 
-  pool.query(`UPDATE evaluations SET contenders = $1, rankinglist = $2, rejected = $3, divisionchiefid = $4
-    WHERE jobopportunityid = $5 AND jobid = $6`,
-    [newApproved, rankingList, newRejected, 1235984, jobOpportunityId, jobId], cb);
+  pool.query(`UPDATE evaluations SET contenders = $1, rankinglist = $2, rejected = $3
+    WHERE jobopportunityid = $4 AND jobid = $5`,
+    [newApproved, rankingList, newRejected, jobOpportunityId, jobId], cb);
 });
 
 //get evaluations sent to division chief
@@ -136,6 +136,21 @@ router.get('/hr-evaluator/:id', (req, res) => {
     WHERE hrevaluatorid = $1 AND hrrankinglist IS NULL`, [req.params.id], cb);
 });
 
+router.get('/hr-evaluator/view/:evaluationId/:hrEvaluatorId', (req, res) => {
+  const { evaluationId, hrEvaluatorId } = req.params;
+
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query(`SELECT *, (SELECT jobtitle FROM jobs 
+    WHERE jobs.jobid = evaluations.jobid) 
+    FROM evaluations WHERE id = $1 AND hrevaluatorid = $2`, [evaluationId, hrEvaluatorId], cb);
+});
+
 //get hr evaluators
 router.get('/get-hr-evaluators/', (req, res) => {
   const cb = (err, resu) => {
@@ -152,10 +167,20 @@ router.get('/get-hr-evaluators/', (req, res) => {
 router.post('/send-to-hr-evaluators/', (req, res) => {
   const { evaluationId, selectedHrEvaluator } = req.body;
 
+  const cb2 = (err, resu) => {
+    const jobId = resu.rows[0].jobid;
+    const jobOpportunity = resu.rows[0].jobopportunityid;
+
+    pool.query('UPDATE applications SET hrevaluatorid = $1 WHERE jobid = $2 AND jobopportunityid = $3', [selectedHrEvaluator, jobId, jobOpportunity], () => {
+      res.send({
+        status: 200
+      })
+    });
+  };
+
   const cb = (err, resu) => {
-    res.send({
-      status: 200
-    })
+    pool.query('SELECT jobopportunityid, jobid FROM evaluations WHERE hrevaluatorid = $1', [selectedHrEvaluator], cb2);
+
   };
 
   pool.query(`UPDATE evaluations SET hrevaluatorid = $1 WHERE id = $2`, [selectedHrEvaluator, evaluationId], cb);
