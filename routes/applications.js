@@ -235,4 +235,17 @@ router.get('/submit/:id', (req, res) => {
 
 });
 
+//get the files of latest application by applicant id
+router.get('/files/:id', (req, res) => {
+  const cb = (err, resu) => {
+    res.send({
+      status: 200,
+      data: resu.rows
+    })
+  };
+
+  pool.query('SELECT details FROM applications WHERE applicantid = $1 ORDER BY dateofsubmission DESC LIMIT 1',
+    [req.params.id], cb);
+});
+
 module.exports = router;

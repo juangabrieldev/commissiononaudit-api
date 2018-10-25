@@ -151,96 +151,12 @@ router.post('/register', (req, res) => {
               })
             }
 
-            client.query('SELECT role FROM employees WHERE employeeid = $1', [req.body.employeeId], (err, roleRes) => {
-              const personalDataSheet = {
-                trainingsAttended: [
-                  {
-                    date: null,
-                    hours: null,
-                    training: null,
-                    dataSource: [],
-                    isAbleToAdd: false
-                  }
-                ],
-                educationalBackground: {
-                  college: {
-                    nameOfSchool: null,
-                    periodOfAttendance: {
-                      to: null,
-                      from: null
-                    },
-                    highestLevelUnitsEarned: '',
-                    basicEducationDegreeCourse: null,
-                    scholarshipAcademicHonorsReceived: [
-                      ''
-                    ]
-                  },
-                  secondary: {
-                    nameOfSchool: null,
-                    periodOfAttendance: {
-                      to: null,
-                      from: null
-                    },
-                    highestLevelUnitsEarned: '',
-                    basicEducationDegreeCourse: null,
-                    scholarshipAcademicHonorsReceived: [
-                      ''
-                    ]
-                  },
-                  elementary: {
-                    nameOfSchool: null,
-                    periodOfAttendance: {
-                      to: null,
-                      from: null
-                    },
-                    highestLevelUnitsEarned: '',
-                    basicEducationDegreeCourse: null,
-                    scholarshipAcademicHonorsReceived: [
-                      ''
-                    ]
-                  },
-                  vocational: {
-                    nameOfSchool: null,
-                    periodOfAttendance: {
-                      to: null,
-                      from: null
-                    },
-                    highestLevelUnitsEarned: '',
-                    basicEducationDegreeCourse: null,
-                    scholarshipAcademicHonorsReceived: [
-                      ''
-                    ]
-                  },
-                  graduateStudies: {
-                    nameOfSchool: null,
-                    periodOfAttendance: {
-                      to: null,
-                      from: null
-                    },
-                    highestLevelUnitsEarned: '',
-                    basicEducationDegreeCourse: null,
-                    scholarshipAcademicHonorsReceived: [
-                      ''
-                    ]
-                  }
-                },
-                civilServiceEligibility: [],
-                workExperienceWithinCoa: [
-                  {
-                    isAbleToAdd: false,
-                    positionTitle: ''
-                  }
-                ],
-                workExperienceOutsideCoa: [
-                  {
-                    isAbleToAdd: false,
-                    positionTitle: ''
-                  }
-                ]
-              };
+            client.query('SELECT role, employeepersonaldatasheet FROM employees WHERE employeeid = $1', [req.body.employeeId], (err, roleRes) => {
 
-              client.query('INSERT INTO accounts(employeeid, password, email, roleid, color, personalDataSheet) VALUES ($1, $2, $3, $4, $5, $6)',
-                [req.body.employeeId, hash, req.body.email, roleRes.rows[0].role, color(), personalDataSheet],
+              const personalDataSheet = roleRes.rows[0].employeepersonaldatasheet;
+
+              client.query('INSERT INTO accounts(employeeid, password, email, roleid, color, personalDataSheet, registrationcomplete) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [req.body.employeeId, hash, req.body.email, roleRes.rows[0].role, color(), personalDataSheet, true],
                 (err, accountsRes) => {
                 if(shouldAbort(err)) {
                   return res.send({
@@ -378,7 +294,7 @@ router.post('/verify/success', (req, res) => {
 
     const token = jwt.sign(
       {
-        mode: 3,
+        mode: 4,
         employeeId,
         email,
         firstName,

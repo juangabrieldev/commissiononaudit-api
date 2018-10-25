@@ -208,7 +208,7 @@ router.get('/personal-data-sheet/:id', (req, res) => {
     });
   };
 
-  pool.query(`SELECT a.employeeid, personaldatasheet, jobtitle, salarygrade, officename FROM accounts a
+  pool.query(`SELECT a.employeeid, a.personaldatasheet, jobtitle, salarygrade, officename FROM accounts a
     JOIN employees e ON a.employeeid = e.employeeid
     JOIN office o on e.officeid = o.id
     JOIN jobs j ON e.jobid = j.jobid

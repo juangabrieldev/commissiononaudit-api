@@ -226,7 +226,7 @@ router.get('/:jobId/:jobOpportunityId', (req, res) => {
       params.push(`$${i + 1}`);
     });
 
-    pool.query(`SELECT details, applicantid, lastname, firstname, LEFT(middlename, 1) as middleinitial, personaldatasheet
+    pool.query(`SELECT details, applicantid, lastname, firstname, LEFT(middlename, 1) as middleinitial, a.personaldatasheet
       FROM applications JOIN employees ON employeeid = applicantid JOIN accounts a on employees.employeeid = a.employeeid 
       WHERE applicantid IN (${params.join(',')})`, applicants, cb2);
   };
